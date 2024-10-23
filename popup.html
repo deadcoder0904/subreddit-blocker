@@ -13,7 +13,7 @@
         font-size: 12px;
         color: #888;
         margin-bottom: 15px;
-        text-align: right;
+        text-align: center;
       }
       textarea {
         width: 100%;
@@ -66,10 +66,14 @@
     </style>
   </head>
   <body>
-    <div class="note">
-      Supported formats: old.reddit.com/r/subreddit reddit.com/r/subreddit
-      /r/subreddit r/subreddit
-    </div>
+    <pre class="note">
+Supported formats:
+old.reddit.com/r/subreddit
+reddit.com/r/subreddit
+/r/subreddit
+r/subreddit
+  </pre
+    >
     <div class="toggle-container">
       <label class="toggle">
         <input type="checkbox" id="enableBlocking" checked />
@@ -79,7 +83,6 @@
     <textarea id="subreddits"></textarea>
     <button id="save">Save</button>
     <div id="status"></div>
-    <script src="config.json" type="application/json" id="config"></script>
     <script src="popup.js"></script>
   </body>
 </html>

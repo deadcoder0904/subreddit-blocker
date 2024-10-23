@@ -1,12 +1,15 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const textarea = document.getElementById('subreddits')
   const enableToggle = document.getElementById('enableBlocking')
   const saveButton = document.getElementById('save')
   const statusDiv = document.getElementById('status')
 
-  // Load config file
-  const config = await fetch('config.json').then((response) => response.json())
-  const defaultSubreddits = config.defaultSubreddits.join('\n')
+  const defaultSubreddits = `old.reddit.com/r/wallstreetbets
+reddit.com/r/cryptocurrency
+/r/politics
+r/antiwork
+r/drama
+r/relationships`
 
   // Load saved settings
   chrome.storage.sync.get(['blockedSubreddits', 'isEnabled'], (data) => {

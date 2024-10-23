@@ -2,6 +2,14 @@ function normalizeSubredditUrl(url) {
   // Remove leading/trailing spaces and convert to lowercase
   url = url.trim().toLowerCase()
 
+  // Handle basic subreddit formats
+  if (url.startsWith('reddit.com/r/')) {
+    url = '/' + url.substring('reddit.com'.length + 1)
+  }
+  if (url.startsWith('old.reddit.com/r/')) {
+    url = '/' + url.substring('old.reddit.com'.length + 1)
+  }
+
   // Handle different URL formats
   if (url.startsWith('r/')) {
     url = '/' + url
