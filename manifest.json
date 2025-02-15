@@ -1,0 +1,25 @@
+{
+	"manifest_version": 3,
+	"name": "Subreddit Blocker",
+	"version": "1.0",
+	"description": "Block specific subreddits with toggle functionality",
+	"permissions": ["storage", "webNavigation"],
+	"host_permissions": ["*://*.reddit.com/*", "*://old.reddit.com/*"],
+	"icons": {
+		"128": "icons/icon128.png"
+	},
+	"action": {
+		"default_popup": "popup.html",
+		"default_icon": {
+			"128": "icons/icon128.png"
+		}
+	},
+	"background": {
+		"scripts": ["background.js"]
+	},
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "subredditblocker@myextensions.com"
+		}
+	}
+}
