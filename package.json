@@ -1,14 +1,16 @@
 {
-  "name": "subreddit-blocker",
-  "module": "index.ts",
-  "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "scripts": {
-    "zip": "zip -r subreddit-blocker.zip manifest.json background.js popup.html popup.js blocked.html icons/ -x *.DS_Store"
-  }
+	"name": "subreddit-blocker",
+	"module": "index.ts",
+	"type": "module",
+	"devDependencies": {
+		"@types/bun": "^1.2.22"
+	},
+	"peerDependencies": {
+		"typescript": "^5.9.2"
+	},
+	"scripts": {
+		"zip": "zip -r subreddit-blocker.zip manifest.json background.js popup.html popup.js blocked.html icons/ -x *.DS_Store",
+		"fmt": "deno fmt",
+		"fmt:check": "deno fmt --check"
+	}
 }
