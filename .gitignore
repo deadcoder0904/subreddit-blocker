@@ -180,3 +180,5 @@ dist/  # Or whatever your output directory is
 *.zip
 *.xpi
 bun.lockb
+
+.yek

@@ -3,14 +3,20 @@
 	"module": "index.ts",
 	"type": "module",
 	"devDependencies": {
-		"@types/bun": "^1.2.22"
+		"@types/bun": "^1.2.22",
+		"rimraf": "^6.0.1"
 	},
 	"peerDependencies": {
 		"typescript": "^5.9.2"
 	},
 	"scripts": {
+		"start": "bun run build",
+		"build": "bun build index.ts --outfile background.js",
+		"dev": "bun build index.ts --outfile background.js --watch",
 		"zip": "zip -r subreddit-blocker.zip manifest.json background.js popup.html popup.js blocked.html icons/ -x *.DS_Store",
 		"fmt": "deno fmt",
-		"fmt:check": "deno fmt --check"
+		"fmt:check": "deno fmt --check",
+		"yek": "yek .",
+		"clean": "rimraf .yek"
 	}
 }

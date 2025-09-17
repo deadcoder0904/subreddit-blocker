@@ -1,0 +1,35 @@
+# Add patterns to ignore (in addition to .gitignore)
+ignore_patterns:
+ - dist/**
+ - assets/**
+ - build/**
+ - out/**
+ - bun.lock
+ - yek.yaml
+ - deno.jsonc
+ - release/**
+ - '*.md'
+
+# Configure Git-based priority boost (optional)
+git_boost_max: 50 # Maximum score boost based on Git history (default: 100)
+
+# Define priority rules for processing order
+# Higher scores are processed first
+priority_rules:
+ - score: 100
+   pattern: package.json
+ - score: 90
+   pattern: '^src/'
+ - score: 80
+   pattern: 'renderer'
+
+# Define output directory
+output_dir: ./.yek
+output_name: output.txt
+
+# Tree
+tree_only: true
+
+# Define output template.
+# FILE_PATH and FILE_CONTENT are expected to be present in the template.
+output_template: "{{{FILE_PATH}}}\n\nFILE_CONTENT"
