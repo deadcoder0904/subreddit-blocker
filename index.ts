@@ -17,7 +17,7 @@ function checkTabAndRedirect(tab: chrome.tabs.Tab,) {
 					if (url.hostname.includes('reddit.com',)) {
 						const subredditMatch = url.pathname.match(/\/r\/([^\/]+)/,)
 						if (subredditMatch) {
-							const subreddit = subredditMatch[1].toLowerCase()
+							const subreddit = `r/${subredditMatch[1].toLowerCase()}`;
 							if (data.blockedSubreddits.includes(subreddit,)) {
 								chrome.tabs.update(tab.id!, {
 									url: chrome.runtime.getURL('blocked.html',),

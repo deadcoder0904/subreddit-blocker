@@ -173,12 +173,8 @@ dist
 
 # Finder (MacOS) folder config
 .DS_Store
-
-dist/  # Or whatever your output directory is
 *.js
 *.js.map
 *.zip
 *.xpi
-bun.lockb
-
 .yek
