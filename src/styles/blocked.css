@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Default: dark */
+@theme {
+  --color-bg: #0b0b0c;
+  --color-panel: #1a1b1e;
+  --color-text: #ffffff;
+  --color-muted: #9aa1a9;
+  --color-border: #2b2d31;
+}
+
+[data-theme="light"] {
+  --color-bg: #fafafa;
+  --color-panel: #ffffff;
+  --color-text: #0b0b0c;
+  --color-muted: #4b5563;
+  --color-border: #e5e7eb;
+}
+
+/* Fallback base so page is never white while Tailwind loads/generates */
+html, body { height: 100%; }
+body {
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-panel) 100%);
+  color: var(--color-text);
+}
