@@ -1,4 +1,4 @@
-import { mkdir, stat, readFile } from 'node:fs/promises'
+import { mkdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 // Lazy import to avoid hard dependency when running --check
@@ -12,7 +12,9 @@ const DEFAULT_CANDIDATES = [
   'src/assets/icon-source.svg',
   'src/assets/icon-source.png',
 ].map((p) => path.resolve(p))
-const OUT_DIR = path.resolve('dist/icons')
+const OUT_DIR = process.env.ICONS_OUT_DIR
+  ? path.resolve(process.env.ICONS_OUT_DIR)
+  : path.resolve('dist/icons')
 const SIZES = [16, 32, 48, 128, 256]
 
 async function exists(p: string) {
@@ -83,7 +85,8 @@ async function main() {
       if (checkOnly) return { size, out }
       const sharp = await loadSharp()
       if (usableSource && sourceBuffer) {
-        const input = srcType === 'svg' ? sharp(sourceBuffer, { density: 1024 }) : sharp(sourceBuffer)
+        const input =
+          srcType === 'svg' ? sharp(sourceBuffer, { density: 1024 }) : sharp(sourceBuffer)
         await input.resize(size, size).png().toFile(out)
       } else {
         // Fallback: generate a simple placeholder icon if no source is present
@@ -99,7 +102,7 @@ async function main() {
           .toFile(out)
       }
       return { size, out }
-    }),
+    })
   )
   if (checkOnly) {
     const missing = (
@@ -115,11 +118,11 @@ async function main() {
   if (usableSource) {
     console.log(
       `[icons] Generated from ${srcType.toUpperCase()} source:`,
-      outputs.map((o) => path.basename(o.out)).join(', '),
+      outputs.map((o) => path.basename(o.out)).join(', ')
     )
   } else {
     console.log(
-      '[icons] Generated placeholder icons (no valid source found). Provide src/assets/icon.svg or icon-source.png, or pass --src=path',
+      '[icons] Generated placeholder icons (no valid source found). Provide src/assets/icon.svg or icon-source.png, or pass --src=path'
     )
   }
 }

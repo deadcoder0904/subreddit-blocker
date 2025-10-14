@@ -1,23 +1,23 @@
-import { mkdir, rm, cp, writeFile, readFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(__dirname, '..')
-const DIST = path.resolve(ROOT, 'dist')
 
 type Target = 'chrome' | 'firefox'
 const TARGET: Target = (process.env.BROWSER as Target) || 'chrome'
 const PROD = process.env.NODE_ENV === 'production'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(__dirname, '..')
+const OUT_BASE = path.resolve(ROOT, 'dist')
+const DIST = path.resolve(OUT_BASE, TARGET)
+
 async function clean() {
   await rm(DIST, { recursive: true, force: true })
+  await mkdir(OUT_BASE, { recursive: true })
   await mkdir(DIST, { recursive: true })
 }
 
 async function bundle() {
-  const outPopup = path.join(DIST, 'popup.js')
-
   const result = await Bun.build({
     entrypoints: [
       path.resolve('src/background/service-worker.ts'),
@@ -31,7 +31,9 @@ async function bundle() {
   })
   if (!result.success) {
     console.error('[build] TS build failed')
-    result.logs.forEach((l) => console.error(l))
+    result.logs.forEach((l) => {
+      console.error(l)
+    })
     throw new Error('Build failed')
   }
 
@@ -65,6 +67,37 @@ async function bundle() {
   } catch {
     console.warn('[build] blocked-theme.js missing?')
   }
+
+  // For Firefox, re-bundle background as classic IIFE for background.scripts compatibility
+  if (TARGET === 'firefox') {
+    const bgOut = path.join(DIST, 'background.js')
+    const res2 = await Bun.build({
+      entrypoints: [path.resolve('src/background/service-worker.ts')],
+      outdir: DIST,
+      target: 'browser',
+      sourcemap: !PROD ? 'external' : 'none',
+      minify: PROD,
+      format: 'iife',
+      naming: {
+        entry: 'background.js',
+      },
+    })
+    if (!res2.success) {
+      console.error('[build] Firefox background (iife) build failed')
+      res2.logs.forEach((l) => {
+        console.error(l)
+      })
+      throw new Error('Build failed')
+    }
+    // Ensure expected filename
+    try {
+      const iifeFile = path.join(DIST, 'service-worker.js')
+      const code = await Bun.file(iifeFile).text()
+      await Bun.write(bgOut, code)
+    } catch {
+      // noop if naming worked
+    }
+  }
 }
 
 async function css() {
@@ -88,7 +121,11 @@ async function css() {
       'src/**/*.{html,ts,tsx,js}',
     ]
     if (PROD) args.push('--minify')
-    const proc = Bun.spawn({ cmd: ['bun', ...args], stdout: 'inherit', stderr: 'inherit' })
+    const proc = Bun.spawn({
+      cmd: ['bun', ...args],
+      stdout: 'inherit',
+      stderr: 'inherit',
+    })
     const code = await proc.exited
     if (code !== 0) throw new Error(`[css] Tailwind failed for ${input}`)
   }
@@ -105,6 +142,7 @@ async function icons() {
     cmd: ['bun', 'run', 'scripts/generate-icons.ts'],
     stdout: 'inherit',
     stderr: 'inherit',
+    env: { ...process.env, ICONS_OUT_DIR: path.join(DIST, 'icons') },
   })
   const code = await proc.exited
   if (code !== 0) throw new Error('[icons] generation failed')

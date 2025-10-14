@@ -13,10 +13,12 @@ async function init() {
   } catch {
     // Fallback to chrome.* if polyfill is not available
     try {
-      // @ts-ignore
+      // @ts-expect-error
       if (globalThis.chrome?.storage?.local) {
-        // @ts-ignore
-        globalThis.chrome.storage.local.get(['theme'], (d: { theme?: string }) => setThemeAttr(d?.theme))
+        // @ts-expect-error
+        globalThis.chrome.storage.local.get(['theme'], (d: { theme?: string }) =>
+          setThemeAttr(d?.theme)
+        )
       } else {
         setThemeAttr(undefined)
       }
@@ -27,4 +29,3 @@ async function init() {
 }
 
 init()
-

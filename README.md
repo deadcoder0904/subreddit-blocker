@@ -36,10 +36,12 @@ Load the `dist/` folder as an unpacked extension.
 - `build` — production build with minified CSS/JS
 - `icons` — generate icons from SVG/PNG:
   - Preferred: `src/assets/icon.svg`
-  - Also supported: `src/assets/icon.png`, `src/assets/icon-source.svg`, `src/assets/icon-source.png`
+  - Also supported: `src/assets/icon.png`, `src/assets/icon-source.svg`,
+    `src/assets/icon-source.png`
   - Or pass a path: `bun run icons -- --src=path/to/icon.svg`
 - `icons:check` — check if all icon sizes exist
-  - SVG supported: place `src/assets/icon.svg` (preferred) or pass `--src=path/to/icon.svg`. PNG fallback also supported.
+  - SVG supported: place `src/assets/icon.svg` (preferred) or pass `--src=path/to/icon.svg`. PNG
+    fallback also supported.
 - `test` — run unit tests (Bun)
 - `lint` / `format` — Biome lint and format
 - `zip` — create `subreddit-blocker.zip` from `dist/`
@@ -58,6 +60,8 @@ Load the `dist/` folder as an unpacked extension.
 ## Notes
 
 - Replace `src/assets/icon-source.png` with a high‑res square PNG (>= 512x512).
-- Or add `src/assets/icon.svg` (or `icon-source.svg`) and the icon pipeline will rasterize to PNG sizes (16/32/48/128/256) for Chrome/Firefox. SVG files aren’t reliably supported directly in manifests across browsers, so we ship PNGs for compatibility.
+- Or add `src/assets/icon.svg` (or `icon-source.svg`) and the icon pipeline will rasterize to PNG
+  sizes (16/32/48/128/256) for Chrome/Firefox. SVG files aren’t reliably supported directly in
+  manifests across browsers, so we ship PNGs for compatibility.
 - Tailwind v4 is CSS‑first; see `src/styles/*` for theme tokens.
 - The background and popup use `webextension-polyfill` to work on Firefox and Chrome.
