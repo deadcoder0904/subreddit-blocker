@@ -1,11 +1,25 @@
-chrome.runtime.onInstalled.addListener(() => {
-	chrome.storage.sync.set({ blockedSubreddits: [], extensionEnabled: true, },)
-},)
+// Only set defaults on first install, and only for missing keys.
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    chrome.storage.local.get(['blockedSubreddits', 'extensionEnabled'], (data) => {
+      const defaults: Record<string, unknown> = {}
+      if (typeof data.blockedSubreddits === 'undefined') {
+        defaults.blockedSubreddits = []
+      }
+      if (typeof data.extensionEnabled === 'undefined') {
+        defaults.extensionEnabled = true
+      }
+      if (Object.keys(defaults).length > 0) {
+        chrome.storage.local.set(defaults)
+      }
+    })
+  }
+})
 
 // Function to check a tab and redirect if blocked
 function checkTabAndRedirect(tab: chrome.tabs.Tab,) {
 	if (tab.url) {
-		chrome.storage.sync.get(
+    chrome.storage.local.get(
 			['blockedSubreddits', 'extensionEnabled',],
 			(data,) => {
 				if (
@@ -18,17 +32,17 @@ function checkTabAndRedirect(tab: chrome.tabs.Tab,) {
 						const subredditMatch = url.pathname.match(/\/r\/([^\/]+)/,)
 						if (subredditMatch) {
 							const subreddit = `r/${subredditMatch[1].toLowerCase()}`;
-							if (data.blockedSubreddits.includes(subreddit,)) {
-								chrome.tabs.update(tab.id!, {
-									url: chrome.runtime.getURL('blocked.html',),
-								},)
-							}
-						}
-					}
-				}
-			},
-		)
-	}
+                            if (data.blockedSubreddits.includes(subreddit,)) {
+                                chrome.tabs.update(tab.id!, {
+                                    url: chrome.runtime.getURL('blocked.html',),
+                                },)
+                            }
+                        }
+                    }
+                }
+            },
+        )
+    }
 }
 
 // Listen for tab updates

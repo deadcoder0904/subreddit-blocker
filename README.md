@@ -36,7 +36,7 @@ Steps:
 
 - The background service worker listens to `webNavigation.onCommitted` for top‑level navigations to Reddit.
 - If the path matches `/r/<name>` and `<name>` is in your block list, the tab is redirected to `blocked.html`.
-- Settings are stored in `chrome.storage.sync`:
+- Settings are stored in `chrome.storage.local`:
   - `blockedSubreddits`: string[] of subreddit names (lowercased)
   - `enabled`: boolean toggle
 

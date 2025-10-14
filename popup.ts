@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusDiv = document.getElementById('status') as HTMLDivElement;
 
   // Load settings from storage
-  chrome.storage.sync.get(['blockedSubreddits', 'extensionEnabled'], (data) => {
+  chrome.storage.local.get(['blockedSubreddits', 'extensionEnabled'], (data) => {
     if (data.blockedSubreddits) {
       subredditsTextarea.value = data.blockedSubreddits.join('\n');
     }
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const extensionEnabled = enableBlockingCheckbox.checked;
 
-    chrome.storage.sync.set({ blockedSubreddits: uniqueSubreddits, extensionEnabled }, () => {
+    chrome.storage.local.set({ blockedSubreddits: uniqueSubreddits, extensionEnabled }, () => {
       statusDiv.textContent = 'Settings Saved!';
       setTimeout(() => {
         statusDiv.textContent = '';
