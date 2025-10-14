@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/*
+  Tailwind v4 tokens and theme setup for the popup UI.
+  Dark is default; light overrides are below using [data-theme="light"].
+*/
+
 /* Default: dark */
 @theme {
   --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu,

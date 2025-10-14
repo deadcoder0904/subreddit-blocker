@@ -30,6 +30,9 @@ async function ensureDir(p: string) {
   await mkdir(p, { recursive: true })
 }
 
+/**
+ * Parse CLI arguments for --check and optional --src path.
+ */
 function parseArgs() {
   const args = process.argv.slice(2)
   const out: { check: boolean; src?: string } = { check: false }
@@ -41,6 +44,9 @@ function parseArgs() {
   return out
 }
 
+/**
+ * Resolve preferred icon source, trying CLI path first then default candidates.
+ */
 async function resolveSource(cliSrc?: string) {
   if (cliSrc && (await exists(cliSrc))) return path.resolve(cliSrc)
   for (const p of DEFAULT_CANDIDATES) {

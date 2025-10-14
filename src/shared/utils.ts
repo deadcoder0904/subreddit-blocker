@@ -21,22 +21,30 @@ export function extractSubreddit(urlStr: string): string | null {
   }
 }
 
+// Normalize a subreddit name into '/r/{name}' form
+function formatSubreddit(name: string | undefined): string | null {
+  const n = name?.trim().toLowerCase()
+  if (!n) return null
+  return `/r/${n}`
+}
+
+// Parse a single line/user entry into a normalized subreddit path or null
+function parseSingleSubredditEntry(raw: string): string | null {
+  const s = raw.trim()
+  if (!s) return null
+  // Prefer robust URL-based extraction
+  const fromUrl = extractSubreddit(s)
+  if (fromUrl) return fromUrl
+  // Fallback: accept `r/foo`, `/r/foo`, or bare `foo`
+  const m = s.match(/^\/?(?:r\/)?([^/\s]+)/i)
+  return formatSubreddit(m?.[1])
+}
+
 // Accepts lines like: r/askreddit, /r/askreddit, askreddit, full URLs
 export function parseSubredditInput(input: string): string[] {
   const lines = input.split(/\r?\n/)
   const parsed = lines
-    .map((raw) => {
-      const s = raw.trim()
-      if (!s) return null
-      // Try as URL first
-      const fromUrl = extractSubreddit(s)
-      if (fromUrl) return fromUrl
-      // Fallback simple parse: optional r/ prefix, stop at next '/'
-      const m = s.match(/^\/?(?:r\/)?([^/\s]+)/i)
-      const name = m?.[1]?.toLowerCase()
-      if (!name) return null
-      return `/r/${name}`
-    })
+    .map((line) => parseSingleSubredditEntry(line))
     .filter((v): v is string => !!v && v !== '/r/')
 
   return [...new Set(parsed)]
