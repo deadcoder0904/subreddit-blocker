@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -6,7 +6,10 @@
     <title>Subreddit Blocker</title>
     <link rel="stylesheet" href="styles/popup.css" />
   </head>
-  <body class="w-96 bg-(--color-bg) text-(--color-text) font-sans text-[13px] leading-5" data-theme="dark">
+  <body
+    class="w-96 bg-(--color-bg) text-(--color-text) font-sans text-[13px] leading-5"
+    data-theme="dark"
+  >
     <div class="flex flex-col gap-3 p-3">
       <div class="flex items-center justify-between">
         <h1 class="text-sm font-semibold">Subreddit Blocker</h1>
@@ -76,11 +79,20 @@ old.reddit.com/r/entrepreneur
           id="lockToday"
           class="flex-1 py-2.5 bg-(--color-panel) text-(--color-text) font-semibold rounded-md border border-(--color-border) hover:bg-(--color-panel-2) text-[13px] inline-flex items-center justify-center gap-1"
         >
-          <svg viewBox="0 0 24 24" fill="currentColor" class="size-4"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor" class="size-4">
+            <path
+              d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
+            />
+          </svg>
           Block for today
         </button>
       </div>
-      <div id="status" role="status" aria-live="polite" class="min-h-[1.25em] text-right text-(--color-success) text-xs"></div>
+      <div
+        id="status"
+        role="status"
+        aria-live="polite"
+        class="min-h-[1.25em] text-right text-(--color-success) text-xs"
+      ></div>
     </div>
     <script src="popup.js" type="module"></script>
   </body>

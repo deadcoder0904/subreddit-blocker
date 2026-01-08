@@ -31,4 +31,4 @@ async function init() {
   }
 }
 
-init()
+void init()
