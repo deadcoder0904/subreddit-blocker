@@ -1,13 +1,18 @@
 // Utilities for parsing inputs and extracting subreddit from URLs
 
-export function isRedditUrl(urlStr: string): boolean {
+import { SUPPORTED_HOSTS } from './constants'
+
+export function isSupportedHostUrl(urlStr: string): boolean {
   try {
     const url = new URL(urlStr)
-    return /(^|\.)reddit\.com$/i.test(url.hostname)
+    const hostname = url.hostname.toLowerCase()
+    return SUPPORTED_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`))
   } catch {
     return false
   }
 }
+
+export const isRedditUrl = isSupportedHostUrl
 
 export function extractSubreddit(urlStr: string): string | null {
   try {

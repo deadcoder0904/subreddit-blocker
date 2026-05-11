@@ -12,10 +12,11 @@ export const DEFAULTS = {
   dailyLockUntil: 0 as number,
 }
 
-export const REDDIT_HOST_PATTERNS = [
-  '*://*.reddit.com/*',
-  '*://reddit.com/*',
-  '*://old.reddit.com/*',
-] as const
+export const SUPPORTED_HOSTS = ['reddit.com', 'troddit.com', 'eddrit.com'] as const
+
+export const SUPPORTED_HOST_PATTERNS = SUPPORTED_HOSTS.flatMap((host) => [
+  `*://*.${host}/*`,
+  `*://${host}/*`,
+])
 
 export const THEMES = ['dark', 'light'] as const

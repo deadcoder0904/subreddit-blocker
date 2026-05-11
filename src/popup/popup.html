@@ -48,7 +48,7 @@
         class="text-xs text-(--color-muted) bg-(--color-panel-2) border border-(--color-border) rounded-md p-2.5"
       >
         <strong>Supported formats:</strong><br />
-        old.reddit.com/r/subreddit<br />reddit.com/r/subreddit<br />/r/subreddit<br />r/subreddit
+        reddit.com/r/subreddit<br />troddit.com/r/subreddit<br />eddrit.com/r/subreddit<br />/r/subreddit<br />r/subreddit
       </div>
       <label
         id="toggleContainer"
@@ -58,15 +58,86 @@
         <span>Enable Blocking</span>
       </label>
 
-      <textarea
-        id="subreddits"
-        class="w-full h-[200px] bg-(--color-panel) text-(--color-text) border-none outline-none focus:outline-none focus:ring-0 rounded-md p-2 font-mono text-[13px] leading-5 appearance-none resize-y box-border"
-        placeholder="one per line, e.g.:
+      <div class="bg-(--color-panel) border border-(--color-border) rounded-md overflow-hidden">
+        <div class="grid grid-cols-2 border-b border-(--color-border)">
+          <button
+            id="blockedListTab"
+            type="button"
+            class="popup-tab popup-tab-active"
+            aria-controls="blockedListPanel"
+            aria-selected="true"
+          >
+            Blocked list
+          </button>
+          <button
+            id="quickBlockTab"
+            type="button"
+            class="popup-tab"
+            aria-controls="quickBlockPanel"
+            aria-selected="false"
+          >
+            Quick block
+          </button>
+        </div>
+
+        <div id="blockedListPanel" class="p-2">
+          <div
+            id="lockedEditNotice"
+            class="hidden mb-2 flex items-center gap-1 rounded-md border border-(--color-border) bg-(--color-panel-2) px-2 py-1.5 text-[12px] text-(--color-muted)"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-(--color-accent)">
+              <path
+                d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
+              />
+            </svg>
+            Edits locked except adding
+          </div>
+          <textarea
+            id="subreddits"
+            class="popup-blocked-list w-full h-[172px] bg-transparent text-(--color-text) border-none outline-none focus:outline-none focus:ring-0 rounded-md p-0 pr-2 font-mono text-[13px] leading-5 appearance-none resize-none box-border"
+            placeholder="one per line, e.g.:
 /r/askreddit
 reddit.com/r/funny
-old.reddit.com/r/entrepreneur
+troddit.com/r/entrepreneur
+eddrit.com/r/programming
 "
-      ></textarea>
+          ></textarea>
+        </div>
+
+        <div id="quickBlockPanel" class="hidden p-2">
+          <label for="quickBlockInput" class="block text-[12px] font-semibold text-(--color-muted)">
+            Add a site to block
+          </label>
+          <div class="mt-1.5 flex gap-2">
+            <input
+              id="quickBlockInput"
+              type="text"
+              class="min-w-0 flex-1 rounded-md border border-(--color-border) bg-(--color-panel-2) px-2 py-2 text-(--color-text) outline-none focus:border-(--color-accent)"
+              placeholder="reddit.com/r/productivity"
+              autocomplete="off"
+            />
+            <button
+              id="quickBlockAdd"
+              type="button"
+              class="inline-flex items-center justify-center rounded-md bg-(--color-accent) px-3 py-2 font-semibold text-white hover:bg-(--color-accent-hover)"
+              aria-label="Block this site"
+            >
+              Block
+            </button>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            <button type="button" class="quick-chip" data-prefix="reddit.com/r/">reddit.com/r/</button>
+            <button type="button" class="quick-chip" data-prefix="/r/">/r/</button>
+            <button type="button" class="quick-chip" data-prefix="r/">r/</button>
+          </div>
+          <div
+            id="quickBlockStatus"
+            role="status"
+            aria-live="polite"
+            class="mt-2 min-h-[1.25em] text-xs text-(--color-muted)"
+          ></div>
+        </div>
+      </div>
 
       <div class="flex gap-2">
         <button

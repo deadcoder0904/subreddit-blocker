@@ -1,8 +1,9 @@
 import browser from 'webextension-polyfill'
 
-import { DEFAULTS, REDDIT_HOST_PATTERNS, STORAGE_KEYS } from '../shared/constants'
+import { DEFAULTS, STORAGE_KEYS, SUPPORTED_HOST_PATTERNS } from '../shared/constants'
+import { shouldBlockUrl } from '../shared/blocking'
+import { getEndOfLocalDay } from '../shared/lock'
 import type { StorageData } from '../shared/types'
-import { extractSubreddit, isRedditUrl } from '../shared/utils'
 
 // Ensure defaults are set on first install
 browser.runtime.onInstalled.addListener(async (details) => {
@@ -11,6 +12,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
     STORAGE_KEYS.blockedSubreddits,
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.theme,
+    STORAGE_KEYS.dailyLockUntil,
   ])) as Partial<StorageData>
 
   const next: Partial<StorageData> = {}
@@ -21,6 +23,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
     next.extensionEnabled = DEFAULTS.extensionEnabled
   }
   if (typeof data.theme === 'undefined') next.theme = DEFAULTS.theme
+  if (typeof data.dailyLockUntil === 'undefined') next.dailyLockUntil = getEndOfLocalDay()
   if (Object.keys(next).length > 0) await browser.storage.local.set(next)
 })
 
@@ -46,10 +49,6 @@ async function loadSettings(): Promise<StorageData> {
   }
 }
 
-function isLockActive(until?: number): boolean {
-  return typeof until === 'number' && until > 0 && Date.now() < until
-}
-
 async function redirectToBlocked(tabId: number) {
   await browser.tabs.update(tabId, { url: browser.runtime.getURL('blocked.html') })
 }
@@ -58,16 +57,7 @@ async function checkAndMaybeRedirect(tab: { id?: number; url?: string }) {
   if (!tab?.url) return
 
   const settings = await loadSettings()
-  const enabled = isLockActive(settings.dailyLockUntil) || settings.extensionEnabled
-  if (!enabled || !settings.blockedSubreddits?.length) return
-
-  // Quick host guard
-  if (!isRedditUrl(tab.url)) return
-
-  const subreddit = extractSubreddit(tab.url)
-  if (!subreddit) return
-
-  if (settings.blockedSubreddits.includes(subreddit) && typeof tab.id === 'number') {
+  if (shouldBlockUrl(settings, tab.url) && typeof tab.id === 'number') {
     await redirectToBlocked(tab.id)
   }
 }
@@ -80,7 +70,7 @@ browser.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
 // Re-evaluate tabs when storage changes
 browser.storage.onChanged.addListener(async () => {
   const tabs = await browser.tabs.query({
-    url: [...REDDIT_HOST_PATTERNS] as unknown as string[],
+    url: [...SUPPORTED_HOST_PATTERNS] as unknown as string[],
   })
   await Promise.all(tabs.map((t) => checkAndMaybeRedirect(t)))
 })

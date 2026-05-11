@@ -1,6 +1,7 @@
 import browser from 'webextension-polyfill'
 
 import { DEFAULTS, STORAGE_KEYS, THEMES } from '../shared/constants'
+import { getEffectiveDailyLockUntil, getLockTodayStorageUpdate } from '../shared/lock'
 import { parseSubredditInput } from '../shared/utils'
 
 function qs<T extends Element = Element>(sel: string): T {
@@ -17,6 +18,10 @@ function showStatus(el: HTMLElement, text: string, ms = 2000) {
     }, ms)
 }
 
+function setVisible(el: HTMLElement, visible: boolean) {
+  el.classList.toggle('hidden', !visible)
+}
+
 function setInteractivity(el: HTMLElement, interactive: boolean) {
   if (interactive) {
     el.style.pointerEvents = ''
@@ -29,6 +34,24 @@ function setInteractivity(el: HTMLElement, interactive: boolean) {
     el.setAttribute('tabindex', '-1')
     el.classList.add('opacity-60', 'cursor-not-allowed')
   }
+}
+
+function setActiveTab(
+  active: 'blockedList' | 'quickBlock',
+  tabs: {
+    blockedListTab: HTMLButtonElement
+    quickBlockTab: HTMLButtonElement
+    blockedListPanel: HTMLDivElement
+    quickBlockPanel: HTMLDivElement
+  }
+) {
+  const blockedActive = active === 'blockedList'
+  tabs.blockedListTab.classList.toggle('popup-tab-active', blockedActive)
+  tabs.quickBlockTab.classList.toggle('popup-tab-active', !blockedActive)
+  tabs.blockedListTab.setAttribute('aria-selected', String(blockedActive))
+  tabs.quickBlockTab.setAttribute('aria-selected', String(!blockedActive))
+  setVisible(tabs.blockedListPanel, blockedActive)
+  setVisible(tabs.quickBlockPanel, !blockedActive)
 }
 
 function applyTheme(
@@ -57,11 +80,14 @@ function applyLockState(
   subredditsTextarea: HTMLTextAreaElement
 ) {
   controls.forEach((el) => {
-    setInteractivity(el, !locked)
     if (el === subredditsTextarea) {
-      ;(el as HTMLTextAreaElement).readOnly = locked
-      if (locked) (el as HTMLTextAreaElement).blur()
+      subredditsTextarea.readOnly = locked
+      subredditsTextarea.classList.toggle('opacity-80', locked)
+      if (locked) subredditsTextarea.blur()
+      return
     }
+
+    setInteractivity(el, !locked)
   })
 
   if (locked) {
@@ -88,6 +114,10 @@ function formatListForTextarea(list: string[]): string {
   return list.map((s) => (s.startsWith('/r/') ? s : s.startsWith('r/') ? `/${s}` : s)).join('\n')
 }
 
+function mergeSubredditLists(...lists: string[][]): string[] {
+  return [...new Set(lists.flat())]
+}
+
 async function init() {
   const subredditsTextarea = qs<HTMLTextAreaElement>('#subreddits')
   const enableBlockingCheckbox = qs<HTMLInputElement>('#enableBlocking')
@@ -99,6 +129,15 @@ async function init() {
   const iconMoon = qs<SVGElement>('#iconMoon')
   const lockButton = qs<HTMLButtonElement>('#lockToday')
   const toggleContainer = qs<HTMLLabelElement>('#toggleContainer')
+  const blockedListTab = qs<HTMLButtonElement>('#blockedListTab')
+  const quickBlockTab = qs<HTMLButtonElement>('#quickBlockTab')
+  const blockedListPanel = qs<HTMLDivElement>('#blockedListPanel')
+  const quickBlockPanel = qs<HTMLDivElement>('#quickBlockPanel')
+  const lockedEditNotice = qs<HTMLDivElement>('#lockedEditNotice')
+  const quickBlockInput = qs<HTMLInputElement>('#quickBlockInput')
+  const quickBlockAdd = qs<HTMLButtonElement>('#quickBlockAdd')
+  const quickBlockStatus = qs<HTMLDivElement>('#quickBlockStatus')
+  const tabs = { blockedListTab, quickBlockTab, blockedListPanel, quickBlockPanel }
 
   const data = await browser.storage.local.get([
     STORAGE_KEYS.blockedSubreddits,
@@ -107,8 +146,13 @@ async function init() {
     STORAGE_KEYS.dailyLockUntil,
   ])
 
-  const list = (data[STORAGE_KEYS.blockedSubreddits] as string[] | undefined) ?? []
-  if (list.length) subredditsTextarea.value = formatListForTextarea(list)
+  let list = (data[STORAGE_KEYS.blockedSubreddits] as string[] | undefined) ?? []
+  const syncBlockedList = (nextList: string[]) => {
+    list = nextList
+    subredditsTextarea.value = formatListForTextarea(list)
+  }
+
+  if (list.length) syncBlockedList(list)
 
   if (typeof data[STORAGE_KEYS.extensionEnabled] === 'boolean') {
     enableBlockingCheckbox.checked = Boolean(data[STORAGE_KEYS.extensionEnabled])
@@ -117,8 +161,12 @@ async function init() {
   const currentTheme = (data[STORAGE_KEYS.theme] as 'light' | 'dark' | undefined) ?? DEFAULTS.theme
   applyTheme(currentTheme, themeLabel, iconSun, iconMoon)
 
-  const lockUntil = (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ?? 0
-  const locked = Boolean(lockUntil && Date.now() < lockUntil)
+  const storedLockUntil = (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ?? 0
+  const lockUntil = getEffectiveDailyLockUntil(storedLockUntil)
+  if (lockUntil !== storedLockUntil) {
+    await browser.storage.local.set({ [STORAGE_KEYS.dailyLockUntil]: lockUntil })
+  }
+  const locked = Date.now() < lockUntil
   applyLockState(
     locked,
     [saveButton, toggleContainer, subredditsTextarea],
@@ -126,15 +174,56 @@ async function init() {
     statusDiv,
     subredditsTextarea
   )
+  setVisible(lockedEditNotice, locked)
+  if (locked) setActiveTab('quickBlock', tabs)
+
+  blockedListTab.addEventListener('click', () => setActiveTab('blockedList', tabs))
+  quickBlockTab.addEventListener('click', () => setActiveTab('quickBlock', tabs))
+
+  document.querySelectorAll<HTMLButtonElement>('.quick-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      quickBlockInput.value = chip.dataset.prefix ?? ''
+      quickBlockInput.focus()
+      quickBlockInput.setSelectionRange(quickBlockInput.value.length, quickBlockInput.value.length)
+    })
+  })
+
+  const addQuickBlock = async () => {
+    const additions = parseSubredditInput(quickBlockInput.value)
+    if (!additions.length) {
+      showStatus(quickBlockStatus, 'Enter a subreddit or supported URL.')
+      return
+    }
+
+    const currentList = parseSubredditInput(subredditsTextarea.value)
+    const nextList = mergeSubredditLists(currentList, additions)
+    await browser.storage.local.set({
+      [STORAGE_KEYS.blockedSubreddits]: nextList,
+      [STORAGE_KEYS.extensionEnabled]: true,
+    })
+    enableBlockingCheckbox.checked = true
+    syncBlockedList(nextList)
+    quickBlockInput.value = ''
+    showStatus(quickBlockStatus, additions.length === 1 ? 'Blocked.' : 'Blocked all additions.')
+  }
 
   saveButton.addEventListener('click', async () => {
     const userList = parseSubredditInput(subredditsTextarea.value)
-    const uniqueSubreddits = [...new Set(userList)]
+    const uniqueSubreddits = mergeSubredditLists(userList)
     await browser.storage.local.set({
       [STORAGE_KEYS.blockedSubreddits]: uniqueSubreddits,
       [STORAGE_KEYS.extensionEnabled]: enableBlockingCheckbox.checked,
     })
+    syncBlockedList(uniqueSubreddits)
     showStatus(statusDiv, 'Settings Saved!')
+  })
+
+  quickBlockAdd.addEventListener('click', addQuickBlock)
+  quickBlockInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      void addQuickBlock()
+    }
   })
 
   themeToggle.addEventListener('click', async () => {
@@ -144,10 +233,8 @@ async function init() {
   })
 
   lockButton.addEventListener('click', async () => {
-    const now = new Date()
-    const until = new Date(now)
-    until.setHours(23, 59, 59, 999)
-    await browser.storage.local.set({ [STORAGE_KEYS.dailyLockUntil]: until.getTime() })
+    enableBlockingCheckbox.checked = true
+    await browser.storage.local.set(getLockTodayStorageUpdate())
     applyLockState(
       true,
       [saveButton, toggleContainer, subredditsTextarea],
@@ -155,6 +242,9 @@ async function init() {
       statusDiv,
       subredditsTextarea
     )
+    setVisible(lockedEditNotice, true)
+    setActiveTab('quickBlock', tabs)
+    showStatus(quickBlockStatus, 'Edits locked except adding.', 3000)
   })
 }
 
