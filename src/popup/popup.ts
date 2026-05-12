@@ -4,10 +4,10 @@ import { DEFAULTS, STORAGE_KEYS, THEMES } from '../shared/constants'
 import { getEffectiveDailyLockUntil, getLockTodayStorageUpdate } from '../shared/lock'
 import { parseSubredditInput } from '../shared/utils'
 
-function qs<T extends Element = Element>(sel: string): T {
+function qs(sel: string): Element {
   const el = document.querySelector(sel)
   if (!el) throw new Error(`Missing element: ${sel}`)
-  return el as T
+  return el
 }
 
 function showStatus(el: HTMLElement, text: string, ms = 2000) {
@@ -119,24 +119,24 @@ function mergeSubredditLists(...lists: string[][]): string[] {
 }
 
 async function init() {
-  const subredditsTextarea = qs<HTMLTextAreaElement>('#subreddits')
-  const enableBlockingCheckbox = qs<HTMLInputElement>('#enableBlocking')
-  const saveButton = qs<HTMLButtonElement>('#save')
-  const statusDiv = qs<HTMLDivElement>('#status')
-  const themeToggle = qs<HTMLButtonElement>('#themeToggle')
-  const themeLabel = qs<HTMLSpanElement>('#themeLabel')
-  const iconSun = qs<SVGElement>('#iconSun')
-  const iconMoon = qs<SVGElement>('#iconMoon')
-  const lockButton = qs<HTMLButtonElement>('#lockToday')
-  const toggleContainer = qs<HTMLLabelElement>('#toggleContainer')
-  const blockedListTab = qs<HTMLButtonElement>('#blockedListTab')
-  const quickBlockTab = qs<HTMLButtonElement>('#quickBlockTab')
-  const blockedListPanel = qs<HTMLDivElement>('#blockedListPanel')
-  const quickBlockPanel = qs<HTMLDivElement>('#quickBlockPanel')
-  const lockedEditNotice = qs<HTMLDivElement>('#lockedEditNotice')
-  const quickBlockInput = qs<HTMLInputElement>('#quickBlockInput')
-  const quickBlockAdd = qs<HTMLButtonElement>('#quickBlockAdd')
-  const quickBlockStatus = qs<HTMLDivElement>('#quickBlockStatus')
+  const subredditsTextarea = qs('#subreddits') as HTMLTextAreaElement
+  const enableBlockingCheckbox = qs('#enableBlocking') as HTMLInputElement
+  const saveButton = qs('#save') as HTMLButtonElement
+  const statusDiv = qs('#status') as HTMLDivElement
+  const themeToggle = qs('#themeToggle') as HTMLButtonElement
+  const themeLabel = qs('#themeLabel') as HTMLSpanElement
+  const iconSun = qs('#iconSun') as SVGElement
+  const iconMoon = qs('#iconMoon') as SVGElement
+  const lockButton = qs('#lockToday') as HTMLButtonElement
+  const toggleContainer = qs('#toggleContainer') as HTMLLabelElement
+  const blockedListTab = qs('#blockedListTab') as HTMLButtonElement
+  const quickBlockTab = qs('#quickBlockTab') as HTMLButtonElement
+  const blockedListPanel = qs('#blockedListPanel') as HTMLDivElement
+  const quickBlockPanel = qs('#quickBlockPanel') as HTMLDivElement
+  const lockedEditNotice = qs('#lockedEditNotice') as HTMLDivElement
+  const quickBlockInput = qs('#quickBlockInput') as HTMLInputElement
+  const quickBlockAdd = qs('#quickBlockAdd') as HTMLButtonElement
+  const quickBlockStatus = qs('#quickBlockStatus') as HTMLDivElement
   const tabs = { blockedListTab, quickBlockTab, blockedListPanel, quickBlockPanel }
 
   const data = await browser.storage.local.get([

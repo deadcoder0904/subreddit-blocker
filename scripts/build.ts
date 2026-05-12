@@ -7,8 +7,8 @@ type Target = 'chrome' | 'firefox'
 function getBuildEnv() {
   const TARGET: Target = (process.env.BROWSER as Target) || 'chrome'
   const PROD = process.env.NODE_ENV === 'production'
-  const __dirname = path.dirname(fileURLToPath(import.meta.url))
-  const ROOT = path.resolve(__dirname, '..')
+  const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+  const ROOT = path.resolve(scriptDir, '..')
   const OUT_BASE = path.resolve(ROOT, 'dist')
   const DIST = path.resolve(OUT_BASE, TARGET)
   const ENTRIES = [
