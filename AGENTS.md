@@ -4,7 +4,7 @@
 
 After completing each prompt with edits, run these commands in order:
 
-1. `bun run format`
+1. `bun run fmt`
 2. `bun run lint`
 3. `bun run typecheck`
 4. `bun run test`

@@ -45,7 +45,7 @@ async function loadSettings(): Promise<StorageData> {
     dailyLockUntil:
       typeof raw[STORAGE_KEYS.dailyLockUntil] === 'number'
         ? (raw[STORAGE_KEYS.dailyLockUntil] as number)
-        : DEFAULTS.dailyLockUntil,
+        : getEndOfLocalDay(),
   }
 }
 

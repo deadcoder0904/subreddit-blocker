@@ -9,8 +9,31 @@
     "restriction": "off",
     "nursery": "off"
   },
+  "jsPlugins": ["oxlint-tailwindcss"],
+  "settings": {
+    "tailwindcss": {
+      "entryPoint": ["src/styles/popup.css", "src/styles/blocked.css"],
+      "rootFontSize": 16
+    }
+  },
   "rules": {
     "eslint/no-await-in-loop": "off",
+    "tailwindcss/consistent-variant-order": "warn",
+    "tailwindcss/enforce-canonical": "error",
+    "tailwindcss/enforce-consistent-important-position": "warn",
+    "tailwindcss/enforce-consistent-variable-syntax": "warn",
+    "tailwindcss/enforce-negative-arbitrary-values": "warn",
+    "tailwindcss/enforce-shorthand": "warn",
+    "tailwindcss/enforce-sort-order": "warn",
+    "tailwindcss/no-conflicting-classes": "error",
+    "tailwindcss/no-contradicting-variants": "warn",
+    "tailwindcss/no-dark-without-light": "warn",
+    "tailwindcss/no-deprecated-classes": "error",
+    "tailwindcss/no-duplicate-classes": "error",
+    "tailwindcss/no-hardcoded-colors": "warn",
+    "tailwindcss/no-unknown-classes": "error",
+    "tailwindcss/no-unnecessary-arbitrary-value": "warn",
+    "tailwindcss/no-unnecessary-whitespace": "error",
     "typescript/no-unnecessary-type-assertion": "off",
     "typescript/no-unsafe-type-assertion": "off"
   }

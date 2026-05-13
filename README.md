@@ -43,7 +43,7 @@ Load the `dist/` folder as an unpacked extension.
   - SVG supported: place `src/assets/icon.svg` (preferred) or pass `--src=path/to/icon.svg`. PNG
     fallback also supported.
 - `test` — run unit tests (Bun)
-- `lint` / `format` — Biome lint and format
+- `lint` / `fmt` — Biome lint and fmt
 - `zip` — create `subreddit-blocker.zip` from `dist/`
 
 ## Structure

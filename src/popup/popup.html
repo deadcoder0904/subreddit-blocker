@@ -1,170 +1,207 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Subreddit Blocker</title>
-    <link rel="stylesheet" href="styles/popup.css" />
-  </head>
-  <body
-    class="w-96 bg-(--color-bg) text-(--color-text) font-sans text-[13px] leading-5"
-    data-theme="dark"
-  >
-    <div class="flex flex-col gap-3 p-3">
-      <div class="flex items-center justify-between">
-        <h1 class="text-sm font-semibold">Subreddit Blocker</h1>
-        <button
-          id="themeToggle"
-          aria-label="Toggle theme"
-          class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-(--color-border) bg-(--color-panel) hover:bg-(--color-panel-2)"
-        >
-          <svg
-            id="iconSun"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="size-4 hidden"
-          >
-            <circle cx="12" cy="12" r="4" />
-            <path
-              d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.535-7.535-1.414 1.414M7.879 16.121l-1.414 1.414m0-12.728 1.414 1.414m9.242 9.242 1.414 1.414"
-            />
-          </svg>
-          <svg
-            id="iconMoon"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="size-4"
-          >
-            <path d="M21 12.79A9 9 0 0 1 11.21 3a7 7 0 1 0 9.79 9.79z" />
-          </svg>
-          <span id="themeLabel">Dark</span>
-        </button>
-      </div>
-      <div
-        class="text-xs text-(--color-muted) bg-(--color-panel-2) border border-(--color-border) rounded-md p-2.5"
-      >
-        <strong>Supported formats:</strong><br />
-        reddit.com/r/subreddit<br />troddit.com/r/subreddit<br />eddrit.com/r/subreddit<br />/r/subreddit<br />r/subreddit
-      </div>
-      <label
-        id="toggleContainer"
-        class="flex items-center gap-2 bg-(--color-panel) border border-(--color-border) rounded-md p-2.5 text-[13px]"
-      >
-        <input type="checkbox" id="enableBlocking" checked class="size-4 accent-(--color-accent)" />
-        <span>Enable Blocking</span>
-      </label>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Subreddit Blocker</title>
+        <link rel="stylesheet" href="styles/popup.css" />
+    </head>
+    <body
+        class="w-96 bg-bg text-text font-sans text-size leading-5"
+        data-theme="dark"
+    >
+        <div class="flex flex-col gap-3 p-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-sm font-semibold">Subreddit Blocker</h1>
+                <button
+                    id="themeToggle"
+                    aria-label="Toggle theme"
+                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-panel hover:bg-panel-2"
+                >
+                    <svg
+                        id="iconSun"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="size-4 hidden"
+                    >
+                        <circle cx="12" cy="12" r="4" />
+                        <path
+                            d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.535-7.535-1.414 1.414M7.879 16.121l-1.414 1.414m0-12.728 1.414 1.414m9.242 9.242 1.414 1.414"
+                        />
+                    </svg>
+                    <svg
+                        id="iconMoon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        class="size-4"
+                    >
+                        <path
+                            d="M21 12.79A9 9 0 0 1 11.21 3a7 7 0 1 0 9.79 9.79z"
+                        />
+                    </svg>
+                    <span id="themeLabel">Dark</span>
+                </button>
+            </div>
+            <div
+                class="text-xs text-muted bg-panel-2 border border-border rounded-md p-2.5"
+            >
+                <strong>Supported formats:</strong><br />
+                reddit.com/r/subreddit<br />troddit.com/r/subreddit<br />eddrit.com/r/subreddit<br />/r/subreddit<br />r/subreddit
+            </div>
+            <label
+                id="toggleContainer"
+                class="flex items-center gap-2 bg-panel border border-border rounded-md p-2.5 text-size"
+            >
+                <input
+                    type="checkbox"
+                    id="enableBlocking"
+                    checked
+                    class="size-4 accent-accent"
+                />
+                <span>Enable Blocking</span>
+            </label>
 
-      <div class="bg-(--color-panel) border border-(--color-border) rounded-md overflow-hidden">
-        <div class="grid grid-cols-2 border-b border-(--color-border)">
-          <button
-            id="blockedListTab"
-            type="button"
-            class="popup-tab popup-tab-active"
-            aria-controls="blockedListPanel"
-            aria-selected="true"
-          >
-            Blocked list
-          </button>
-          <button
-            id="quickBlockTab"
-            type="button"
-            class="popup-tab"
-            aria-controls="quickBlockPanel"
-            aria-selected="false"
-          >
-            Quick block
-          </button>
-        </div>
+            <div
+                class="bg-panel border border-border rounded-md overflow-hidden"
+            >
+                <div class="grid grid-cols-2 border-b border-border">
+                    <button
+                        id="blockedListTab"
+                        type="button"
+                        class="popup-tab popup-tab-active"
+                        aria-controls="blockedListPanel"
+                        aria-selected="true"
+                    >
+                        Blocked list
+                    </button>
+                    <button
+                        id="quickBlockTab"
+                        type="button"
+                        class="popup-tab"
+                        aria-controls="quickBlockPanel"
+                        aria-selected="false"
+                    >
+                        Quick block
+                    </button>
+                </div>
 
-        <div id="blockedListPanel" class="h-[220px] p-2">
-          <div
-            id="lockedEditNotice"
-            class="hidden mb-2 flex items-center gap-1 rounded-md border border-(--color-border) bg-(--color-panel-2) px-2 py-1.5 text-[12px] text-(--color-muted)"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-(--color-accent)">
-              <path
-                d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
-              />
-            </svg>
-            Edits locked except adding
-          </div>
-          <textarea
-            id="subreddits"
-            class="popup-blocked-list w-full h-full bg-transparent text-(--color-text) border-none outline-none focus:outline-none focus:ring-0 rounded-md p-0 pr-2 font-mono text-[13px] leading-5 appearance-none resize-none box-border"
-            placeholder="one per line, e.g.:
+                <div
+                    id="blockedListPanel"
+                    class="flex h-55 min-h-0 flex-col p-2"
+                >
+                    <div
+                        id="lockedEditNotice"
+                        class="mb-2 flex items-center gap-1 rounded-md border border-border bg-panel-2 px-2 py-1.5 pt-2.5 text-[12px] text-muted"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            class="size-3.5 text-accent"
+                        >
+                            <path
+                                d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
+                            />
+                        </svg>
+                        Edits locked except adding
+                    </div>
+                    <textarea
+                        id="subreddits"
+                        class="popup-blocked-list min-h-0 w-full flex-1 bg-transparent text-text border-none outline-none focus:outline-none focus:ring-0 rounded-md p-0 pr-2 font-mono text-size leading-5 appearance-none resize-none box-border"
+                        placeholder="one per line, e.g.:
 /r/askreddit
 reddit.com/r/funny
 troddit.com/r/entrepreneur
 eddrit.com/r/programming
 "
-          ></textarea>
-        </div>
+                    ></textarea>
+                </div>
 
-        <div id="quickBlockPanel" class="hidden h-[220px] p-2">
-          <label for="quickBlockInput" class="block text-[12px] font-semibold text-(--color-muted)">
-            Add a site to block
-          </label>
-          <div class="mt-1.5 flex gap-2">
-            <input
-              id="quickBlockInput"
-              type="text"
-              class="min-w-0 flex-1 rounded-md border border-(--color-border) bg-(--color-panel-2) px-2 py-2 text-(--color-text) outline-none focus:border-(--color-accent)"
-              placeholder="reddit.com/r/productivity"
-              autocomplete="off"
-            />
-            <button
-              id="quickBlockAdd"
-              type="button"
-              class="inline-flex items-center justify-center rounded-md bg-(--color-accent) px-3 py-2 font-semibold text-white hover:bg-(--color-accent-hover)"
-              aria-label="Block this site"
-            >
-              Block
-            </button>
-          </div>
-          <div class="mt-2 flex flex-wrap gap-1.5">
-            <button type="button" class="quick-chip" data-prefix="reddit.com/r/">reddit.com/r/</button>
-            <button type="button" class="quick-chip" data-prefix="/r/">/r/</button>
-            <button type="button" class="quick-chip" data-prefix="r/">r/</button>
-          </div>
-          <div
-            id="quickBlockStatus"
-            role="status"
-            aria-live="polite"
-            class="mt-2 min-h-[1.25em] text-xs text-(--color-muted)"
-          ></div>
-        </div>
-      </div>
+                <div id="quickBlockPanel" class="hidden h-55 p-2">
+                    <label
+                        for="quickBlockInput"
+                        class="block text-[12px] font-semibold text-muted"
+                    >
+                        Add a site to block
+                    </label>
+                    <div class="mt-1.5 flex gap-2">
+                        <input
+                            id="quickBlockInput"
+                            type="text"
+                            class="min-w-0 flex-1 rounded-md border border-border bg-panel-2 px-2 py-2 text-text outline-none focus:border-accent"
+                            placeholder="reddit.com/r/productivity"
+                            autocomplete="off"
+                        />
+                        <button
+                            id="quickBlockAdd"
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-md bg-accent px-3 py-2 font-semibold text-white hover:bg-accent-hover"
+                            aria-label="Block this site"
+                        >
+                            Block
+                        </button>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        <button
+                            type="button"
+                            class="quick-chip"
+                            data-prefix="reddit.com/r/"
+                        >
+                            reddit.com/r/
+                        </button>
+                        <button
+                            type="button"
+                            class="quick-chip"
+                            data-prefix="/r/"
+                        >
+                            /r/
+                        </button>
+                        <button
+                            type="button"
+                            class="quick-chip"
+                            data-prefix="r/"
+                        >
+                            r/
+                        </button>
+                    </div>
+                    <div
+                        id="quickBlockStatus"
+                        role="status"
+                        aria-live="polite"
+                        class="mt-2 min-h-[1.25em] text-xs text-muted"
+                    ></div>
+                </div>
+            </div>
 
-      <div class="flex gap-2">
-        <button
-          id="save"
-          class="flex-1 py-2.5 bg-(--color-accent) text-white font-semibold rounded-md hover:bg-(--color-accent-hover) text-[13px]"
-        >
-          Save
-        </button>
-        <button
-          id="lockToday"
-          class="flex-1 py-2.5 bg-(--color-panel) text-(--color-text) font-semibold rounded-md border border-(--color-border) hover:bg-(--color-panel-2) text-[13px] inline-flex items-center justify-center gap-1"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" class="size-4">
-            <path
-              d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
-            />
-          </svg>
-          Block for today
-        </button>
-      </div>
-      <div
-        id="status"
-        role="status"
-        aria-live="polite"
-        class="min-h-[1.25em] text-right text-(--color-success) text-xs"
-      ></div>
-    </div>
-    <script src="popup.js" type="module"></script>
-  </body>
+            <div class="flex gap-2">
+                <button
+                    id="save"
+                    class="flex-1 py-2.5 bg-accent text-white font-semibold rounded-md hover:bg-accent-hover text-size"
+                >
+                    Save
+                </button>
+                <button
+                    id="lockToday"
+                    class="flex-1 py-2.5 bg-panel text-text font-semibold rounded-md border border-border hover:bg-panel-2 text-size inline-flex items-center justify-center gap-1"
+                >
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                        <path
+                            d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
+                        />
+                    </svg>
+                    Block for today
+                </button>
+            </div>
+            <div
+                id="status"
+                role="status"
+                aria-live="polite"
+                class="min-h-[1.25em] text-right text-success text-xs"
+            ></div>
+        </div>
+        <script src="popup.js" type="module"></script>
+    </body>
 </html>

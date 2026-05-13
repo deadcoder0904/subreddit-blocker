@@ -1,7 +1,11 @@
 import browser from 'webextension-polyfill'
 
 import { DEFAULTS, STORAGE_KEYS, THEMES } from '../shared/constants'
-import { getEffectiveDailyLockUntil, getLockTodayStorageUpdate } from '../shared/lock'
+import {
+  getEffectiveDailyLockUntil,
+  getEndOfLocalDay,
+  getLockTodayStorageUpdate,
+} from '../shared/lock'
 import { parseSubredditInput } from '../shared/utils'
 
 function qs(sel: string): Element {
@@ -118,6 +122,12 @@ function mergeSubredditLists(...lists: string[][]): string[] {
   return [...new Set(lists.flat())]
 }
 
+function scrollBlockedListToEnd(textarea: HTMLTextAreaElement) {
+  requestAnimationFrame(() => {
+    textarea.scrollTop = textarea.scrollHeight
+  })
+}
+
 async function init() {
   const subredditsTextarea = qs('#subreddits') as HTMLTextAreaElement
   const enableBlockingCheckbox = qs('#enableBlocking') as HTMLInputElement
@@ -146,22 +156,43 @@ async function init() {
     STORAGE_KEYS.dailyLockUntil,
   ])
 
-  let list = (data[STORAGE_KEYS.blockedSubreddits] as string[] | undefined) ?? []
+  const defaultsToSave: Record<string, unknown> = {}
+  if (typeof data[STORAGE_KEYS.blockedSubreddits] === 'undefined') {
+    defaultsToSave[STORAGE_KEYS.blockedSubreddits] = DEFAULTS.blockedSubreddits
+  }
+  if (typeof data[STORAGE_KEYS.extensionEnabled] === 'undefined') {
+    defaultsToSave[STORAGE_KEYS.extensionEnabled] = DEFAULTS.extensionEnabled
+  }
+  if (typeof data[STORAGE_KEYS.theme] === 'undefined') {
+    defaultsToSave[STORAGE_KEYS.theme] = DEFAULTS.theme
+  }
+  if (typeof data[STORAGE_KEYS.dailyLockUntil] === 'undefined') {
+    defaultsToSave[STORAGE_KEYS.dailyLockUntil] = getEndOfLocalDay()
+  }
+  if (Object.keys(defaultsToSave).length > 0) await browser.storage.local.set(defaultsToSave)
+
+  let list =
+    (data[STORAGE_KEYS.blockedSubreddits] as string[] | undefined) ?? DEFAULTS.blockedSubreddits
   const syncBlockedList = (nextList: string[]) => {
     list = nextList
     subredditsTextarea.value = formatListForTextarea(list)
+    scrollBlockedListToEnd(subredditsTextarea)
   }
 
   if (list.length) syncBlockedList(list)
 
-  if (typeof data[STORAGE_KEYS.extensionEnabled] === 'boolean') {
-    enableBlockingCheckbox.checked = Boolean(data[STORAGE_KEYS.extensionEnabled])
-  }
+  enableBlockingCheckbox.checked =
+    typeof data[STORAGE_KEYS.extensionEnabled] === 'boolean'
+      ? Boolean(data[STORAGE_KEYS.extensionEnabled])
+      : DEFAULTS.extensionEnabled
 
   const currentTheme = (data[STORAGE_KEYS.theme] as 'light' | 'dark' | undefined) ?? DEFAULTS.theme
   applyTheme(currentTheme, themeLabel, iconSun, iconMoon)
 
-  const storedLockUntil = (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ?? 0
+  const storedLockUntil =
+    (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ??
+    (defaultsToSave[STORAGE_KEYS.dailyLockUntil] as number | undefined) ??
+    DEFAULTS.dailyLockUntil
   const lockUntil = getEffectiveDailyLockUntil(storedLockUntil)
   if (lockUntil !== storedLockUntil) {
     await browser.storage.local.set({ [STORAGE_KEYS.dailyLockUntil]: lockUntil })
