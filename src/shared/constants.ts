@@ -1,8 +1,11 @@
+import type { TimeBlock } from './types'
+
 export const STORAGE_KEYS = {
   blockedSubreddits: 'blockedSubreddits',
   extensionEnabled: 'extensionEnabled',
   theme: 'theme',
   dailyLockUntil: 'dailyLockUntil',
+  timeBlocks: 'timeBlocks',
 } as const
 
 export const DEFAULTS = {
@@ -10,6 +13,7 @@ export const DEFAULTS = {
   extensionEnabled: true,
   theme: 'dark' as 'dark' | 'light',
   dailyLockUntil: 0 as number,
+  timeBlocks: [] as TimeBlock[],
 }
 
 export const SUPPORTED_HOSTS = ['reddit.com', 'troddit.com', 'eddrit.com'] as const

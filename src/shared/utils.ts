@@ -54,3 +54,54 @@ export function parseSubredditInput(input: string): string[] {
 
   return [...new Set(parsed)]
 }
+
+export function formatListForTextarea(list: string[]): string {
+  return list.map((s) => (s.startsWith('/r/') ? s : s.startsWith('r/') ? `/${s}` : s)).join('\n')
+}
+
+export function mergeSubredditLists(...lists: string[][]): string[] {
+  return [...new Set(lists.flat())]
+}
+
+export function getDaysText(days: number[]): string {
+  if (days.length === 7) return 'Daily'
+  if (days.length === 5 && !days.includes(0) && !days.includes(6)) return 'Weekdays'
+  if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Weekends'
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  /* eslint-disable-next-line unicorn/no-array-sort */
+  const sortedDays = [...days].sort((a, b) => a - b)
+  return sortedDays.map((d) => dayNames[d]).join(', ')
+}
+
+export function formatSubredditDisplayName(name: string): string {
+  if (name.startsWith('/r/')) return name
+  if (name.startsWith('r/')) return '/' + name
+  return `/r/${name}`
+}
+
+export interface QuickBlockResult {
+  success: boolean
+  message: string
+  nextList?: string[]
+  isError?: boolean
+}
+
+export function handleQuickBlockInput(inputValue: string, currentList: string[]): QuickBlockResult {
+  const additions = parseSubredditInput(inputValue)
+  if (additions.length === 0) {
+    return { success: false, message: 'Enter a subreddit or supported URL.', isError: true }
+  }
+
+  const alreadyBlocked = additions.filter((name) => currentList.includes(name))
+  const newAdditions = additions.filter((name) => !currentList.includes(name))
+
+  if (newAdditions.length === 0) {
+    const displayNames = alreadyBlocked.map(formatSubredditDisplayName).join(', ')
+    return { success: false, message: `${displayNames} is already blocked.`, isError: true }
+  }
+
+  const nextList = mergeSubredditLists(currentList, newAdditions)
+  const displayNames = newAdditions.map(formatSubredditDisplayName).join(', ')
+  return { success: true, message: `Blocked ${displayNames}`, nextList }
+}

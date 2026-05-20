@@ -2,8 +2,7 @@ import browser from 'webextension-polyfill'
 
 import { DEFAULTS, STORAGE_KEYS, SUPPORTED_HOST_PATTERNS } from '../shared/constants'
 import { shouldBlockUrl } from '../shared/blocking'
-import { getEndOfLocalDay } from '../shared/lock'
-import type { StorageData } from '../shared/types'
+import type { StorageData, TimeBlock } from '../shared/types'
 
 // Ensure defaults are set on first install
 browser.runtime.onInstalled.addListener(async (details) => {
@@ -13,6 +12,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.theme,
     STORAGE_KEYS.dailyLockUntil,
+    STORAGE_KEYS.timeBlocks,
   ])) as Partial<StorageData>
 
   const next: Partial<StorageData> = {}
@@ -23,7 +23,8 @@ browser.runtime.onInstalled.addListener(async (details) => {
     next.extensionEnabled = DEFAULTS.extensionEnabled
   }
   if (typeof data.theme === 'undefined') next.theme = DEFAULTS.theme
-  if (typeof data.dailyLockUntil === 'undefined') next.dailyLockUntil = getEndOfLocalDay()
+  if (typeof data.dailyLockUntil === 'undefined') next.dailyLockUntil = DEFAULTS.dailyLockUntil
+  if (typeof data.timeBlocks === 'undefined') next.timeBlocks = DEFAULTS.timeBlocks
   if (Object.keys(next).length > 0) await browser.storage.local.set(next)
 })
 
@@ -33,6 +34,7 @@ async function loadSettings(): Promise<StorageData> {
     STORAGE_KEYS.blockedSubreddits,
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.dailyLockUntil,
+    STORAGE_KEYS.timeBlocks,
   ])) as Record<string, unknown>
   return {
     blockedSubreddits: Array.isArray(raw[STORAGE_KEYS.blockedSubreddits])
@@ -45,7 +47,10 @@ async function loadSettings(): Promise<StorageData> {
     dailyLockUntil:
       typeof raw[STORAGE_KEYS.dailyLockUntil] === 'number'
         ? (raw[STORAGE_KEYS.dailyLockUntil] as number)
-        : getEndOfLocalDay(),
+        : DEFAULTS.dailyLockUntil,
+    timeBlocks: Array.isArray(raw[STORAGE_KEYS.timeBlocks])
+      ? (raw[STORAGE_KEYS.timeBlocks] as TimeBlock[])
+      : DEFAULTS.timeBlocks,
   }
 }
 

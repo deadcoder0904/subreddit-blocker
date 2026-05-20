@@ -1,281 +1,252 @@
 import browser from 'webextension-polyfill'
 
-import { DEFAULTS, STORAGE_KEYS, THEMES } from '../shared/constants'
+import { DEFAULTS, STORAGE_KEYS } from '../shared/constants'
 import {
   getEffectiveDailyLockUntil,
-  getEndOfLocalDay,
   getLockTodayStorageUpdate,
+  getActiveTimeBlock,
 } from '../shared/lock'
-import { parseSubredditInput } from '../shared/utils'
+import {
+  parseSubredditInput,
+  formatListForTextarea,
+  mergeSubredditLists,
+  handleQuickBlockInput,
+} from '../shared/utils'
+import type { TimeBlock } from '../shared/types'
 
-function qs(sel: string): Element {
-  const el = document.querySelector(sel)
-  if (!el) throw new Error(`Missing element: ${sel}`)
-  return el
-}
-
-function showStatus(el: HTMLElement, text: string, ms = 2000) {
-  el.textContent = text
-  if (ms > 0)
-    setTimeout(() => {
-      el.textContent = ''
-    }, ms)
-}
-
-function setVisible(el: HTMLElement, visible: boolean) {
-  el.classList.toggle('hidden', !visible)
-}
-
-function setInteractivity(el: HTMLElement, interactive: boolean) {
-  if (interactive) {
-    el.style.pointerEvents = ''
-    el.removeAttribute('aria-disabled')
-    el.removeAttribute('tabindex')
-    el.classList.remove('opacity-60', 'cursor-not-allowed')
-  } else {
-    el.style.pointerEvents = 'none'
-    el.setAttribute('aria-disabled', 'true')
-    el.setAttribute('tabindex', '-1')
-    el.classList.add('opacity-60', 'cursor-not-allowed')
-  }
-}
+import { getPopupElements, showStatus, setVisible, scrollBlockedListToEnd } from './dom'
+import { setupThemeToggle } from './theme'
+import { applyLockState, setupCountdownTimer } from './lock-ui'
+import { setupScheduleUI } from './schedule-ui'
 
 function setActiveTab(
-  active: 'blockedList' | 'quickBlock',
+  active: 'blockedList' | 'quickBlock' | 'schedule',
   tabs: {
     blockedListTab: HTMLButtonElement
     quickBlockTab: HTMLButtonElement
+    scheduleTab: HTMLButtonElement
     blockedListPanel: HTMLDivElement
     quickBlockPanel: HTMLDivElement
+    schedulePanel: HTMLDivElement
   }
 ) {
-  const blockedActive = active === 'blockedList'
-  tabs.blockedListTab.classList.toggle('popup-tab-active', blockedActive)
-  tabs.quickBlockTab.classList.toggle('popup-tab-active', !blockedActive)
-  tabs.blockedListTab.setAttribute('aria-selected', String(blockedActive))
-  tabs.quickBlockTab.setAttribute('aria-selected', String(!blockedActive))
-  setVisible(tabs.blockedListPanel, blockedActive)
-  setVisible(tabs.quickBlockPanel, !blockedActive)
-}
+  sessionStorage.setItem('activeTab', active)
 
-function applyTheme(
-  theme: 'light' | 'dark',
-  labelEl: HTMLElement,
-  sunIcon: Element,
-  moonIcon: Element
-) {
-  if (!THEMES.includes(theme)) theme = DEFAULTS.theme
-  document.body.setAttribute('data-theme', theme)
-  labelEl.textContent = theme === 'dark' ? 'Dark' : 'Light'
-  if (theme === 'dark') {
-    sunIcon.classList.remove('hidden')
-    moonIcon.classList.add('hidden')
-  } else {
-    sunIcon.classList.add('hidden')
-    moonIcon.classList.remove('hidden')
-  }
-}
+  tabs.blockedListTab.classList.toggle('popup-tab-active', active === 'blockedList')
+  tabs.quickBlockTab.classList.toggle('popup-tab-active', active === 'quickBlock')
+  tabs.scheduleTab.classList.toggle('popup-tab-active', active === 'schedule')
 
-function applyLockState(
-  locked: boolean,
-  controls: Array<HTMLElement>,
-  lockButton: HTMLButtonElement,
-  statusDiv: HTMLDivElement,
-  subredditsTextarea: HTMLTextAreaElement
-) {
-  controls.forEach((el) => {
-    if (el === subredditsTextarea) {
-      subredditsTextarea.readOnly = locked
-      subredditsTextarea.classList.toggle('opacity-80', locked)
-      if (locked) subredditsTextarea.blur()
-      return
-    }
+  tabs.blockedListTab.setAttribute('aria-selected', String(active === 'blockedList'))
+  tabs.quickBlockTab.setAttribute('aria-selected', String(active === 'quickBlock'))
+  tabs.scheduleTab.setAttribute('aria-selected', String(active === 'schedule'))
 
-    setInteractivity(el, !locked)
-  })
-
-  if (locked) {
-    lockButton.style.pointerEvents = 'none'
-    lockButton.setAttribute('aria-disabled', 'true')
-    lockButton.setAttribute('tabindex', '-1')
-    lockButton.className =
-      'flex-1 py-2.5 text-(--color-accent) font-semibold rounded-md text-[13px] inline-flex items-center justify-center gap-1'
-    lockButton.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="currentColor" class="size-4"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg> Locked for today'
-  } else {
-    lockButton.style.pointerEvents = ''
-    lockButton.removeAttribute('aria-disabled')
-    lockButton.removeAttribute('tabindex')
-    lockButton.className =
-      'flex-1 py-2.5 bg-(--color-panel) text-(--color-text) font-semibold rounded-md border border-(--color-border) hover:bg-(--color-panel-2) text-[13px] inline-flex items-center justify-center gap-1'
-    lockButton.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="currentColor" class="size-4"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg> Block for today'
-    statusDiv.textContent = ''
-  }
-}
-
-function formatListForTextarea(list: string[]): string {
-  return list.map((s) => (s.startsWith('/r/') ? s : s.startsWith('r/') ? `/${s}` : s)).join('\n')
-}
-
-function mergeSubredditLists(...lists: string[][]): string[] {
-  return [...new Set(lists.flat())]
-}
-
-function scrollBlockedListToEnd(textarea: HTMLTextAreaElement) {
-  requestAnimationFrame(() => {
-    textarea.scrollTop = textarea.scrollHeight
-  })
+  setVisible(tabs.blockedListPanel, active === 'blockedList')
+  setVisible(tabs.quickBlockPanel, active === 'quickBlock')
+  setVisible(tabs.schedulePanel, active === 'schedule')
 }
 
 async function init() {
-  const subredditsTextarea = qs('#subreddits') as HTMLTextAreaElement
-  const enableBlockingCheckbox = qs('#enableBlocking') as HTMLInputElement
-  const saveButton = qs('#save') as HTMLButtonElement
-  const statusDiv = qs('#status') as HTMLDivElement
-  const themeToggle = qs('#themeToggle') as HTMLButtonElement
-  const themeLabel = qs('#themeLabel') as HTMLSpanElement
-  const iconSun = qs('#iconSun') as SVGElement
-  const iconMoon = qs('#iconMoon') as SVGElement
-  const lockButton = qs('#lockToday') as HTMLButtonElement
-  const toggleContainer = qs('#toggleContainer') as HTMLLabelElement
-  const blockedListTab = qs('#blockedListTab') as HTMLButtonElement
-  const quickBlockTab = qs('#quickBlockTab') as HTMLButtonElement
-  const blockedListPanel = qs('#blockedListPanel') as HTMLDivElement
-  const quickBlockPanel = qs('#quickBlockPanel') as HTMLDivElement
-  const lockedEditNotice = qs('#lockedEditNotice') as HTMLDivElement
-  const quickBlockInput = qs('#quickBlockInput') as HTMLInputElement
-  const quickBlockAdd = qs('#quickBlockAdd') as HTMLButtonElement
-  const quickBlockStatus = qs('#quickBlockStatus') as HTMLDivElement
-  const tabs = { blockedListTab, quickBlockTab, blockedListPanel, quickBlockPanel }
+  const els = getPopupElements()
 
+  // Load storage
   const data = await browser.storage.local.get([
     STORAGE_KEYS.blockedSubreddits,
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.theme,
     STORAGE_KEYS.dailyLockUntil,
+    STORAGE_KEYS.timeBlocks,
   ])
 
+  // Save defaults if missing
   const defaultsToSave: Record<string, unknown> = {}
-  if (typeof data[STORAGE_KEYS.blockedSubreddits] === 'undefined') {
-    defaultsToSave[STORAGE_KEYS.blockedSubreddits] = DEFAULTS.blockedSubreddits
+  for (const key of Object.values(STORAGE_KEYS)) {
+    if (typeof data[key] === 'undefined') {
+      defaultsToSave[key] = DEFAULTS[key as keyof typeof DEFAULTS]
+    }
   }
-  if (typeof data[STORAGE_KEYS.extensionEnabled] === 'undefined') {
-    defaultsToSave[STORAGE_KEYS.extensionEnabled] = DEFAULTS.extensionEnabled
+  if (Object.keys(defaultsToSave).length > 0) {
+    await browser.storage.local.set(defaultsToSave)
   }
-  if (typeof data[STORAGE_KEYS.theme] === 'undefined') {
-    defaultsToSave[STORAGE_KEYS.theme] = DEFAULTS.theme
-  }
-  if (typeof data[STORAGE_KEYS.dailyLockUntil] === 'undefined') {
-    defaultsToSave[STORAGE_KEYS.dailyLockUntil] = getEndOfLocalDay()
-  }
-  if (Object.keys(defaultsToSave).length > 0) await browser.storage.local.set(defaultsToSave)
 
+  // Initialize Block List
   let list =
     (data[STORAGE_KEYS.blockedSubreddits] as string[] | undefined) ?? DEFAULTS.blockedSubreddits
   const syncBlockedList = (nextList: string[]) => {
     list = nextList
-    subredditsTextarea.value = formatListForTextarea(list)
-    scrollBlockedListToEnd(subredditsTextarea)
+    els.subredditsTextarea.value = formatListForTextarea(list)
+    scrollBlockedListToEnd(els.subredditsTextarea)
   }
+  if (list.length > 0) syncBlockedList(list)
 
-  if (list.length) syncBlockedList(list)
-
-  enableBlockingCheckbox.checked =
+  // Initialize Blocking checkbox
+  els.enableBlockingCheckbox.checked =
     typeof data[STORAGE_KEYS.extensionEnabled] === 'boolean'
       ? Boolean(data[STORAGE_KEYS.extensionEnabled])
       : DEFAULTS.extensionEnabled
 
+  // Initialize theme setup
   const currentTheme = (data[STORAGE_KEYS.theme] as 'light' | 'dark' | undefined) ?? DEFAULTS.theme
-  applyTheme(currentTheme, themeLabel, iconSun, iconMoon)
+  setupThemeToggle(
+    els.themeToggle,
+    els.themeLabel,
+    els.iconSun,
+    els.iconMoon,
+    currentTheme,
+    async (next) => {
+      await browser.storage.local.set({ [STORAGE_KEYS.theme]: next })
+    }
+  )
 
+  // Initialize Schedules & Locking
+  const timeBlocks =
+    (data[STORAGE_KEYS.timeBlocks] as TimeBlock[] | undefined) ?? DEFAULTS.timeBlocks
   const storedLockUntil =
-    (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ??
-    (defaultsToSave[STORAGE_KEYS.dailyLockUntil] as number | undefined) ??
-    DEFAULTS.dailyLockUntil
+    (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ?? DEFAULTS.dailyLockUntil
   const lockUntil = getEffectiveDailyLockUntil(storedLockUntil)
   if (lockUntil !== storedLockUntil) {
     await browser.storage.local.set({ [STORAGE_KEYS.dailyLockUntil]: lockUntil })
   }
-  const locked = Date.now() < lockUntil
+
+  const activeTimeBlock = getActiveTimeBlock(timeBlocks)
+  const isLockedBySchedule = activeTimeBlock !== null
+  const locked = Date.now() < lockUntil || isLockedBySchedule
+
+  // Setup tabs
+  const tabSet = {
+    blockedListTab: els.blockedListTab,
+    quickBlockTab: els.quickBlockTab,
+    scheduleTab: els.scheduleTab,
+    blockedListPanel: els.blockedListPanel,
+    quickBlockPanel: els.quickBlockPanel,
+    schedulePanel: els.schedulePanel,
+  }
+
+  const savedActiveTab = sessionStorage.getItem('activeTab') as
+    | 'blockedList'
+    | 'quickBlock'
+    | 'schedule'
+    | null
+  if (savedActiveTab) {
+    setActiveTab(savedActiveTab, tabSet)
+  } else {
+    setActiveTab(locked ? 'quickBlock' : 'blockedList', tabSet)
+  }
+
+  els.blockedListTab.addEventListener('click', () => setActiveTab('blockedList', tabSet))
+  els.quickBlockTab.addEventListener('click', () => setActiveTab('quickBlock', tabSet))
+  els.scheduleTab.addEventListener('click', () => setActiveTab('schedule', tabSet))
+
+  // Enforce lock UI state
   applyLockState(
     locked,
-    [saveButton, toggleContainer, subredditsTextarea],
-    lockButton,
-    statusDiv,
-    subredditsTextarea
+    [els.saveButton, els.toggleContainer, els.subredditsTextarea],
+    els.lockButton,
+    els.statusDiv,
+    els.subredditsTextarea,
+    isLockedBySchedule
   )
-  setVisible(lockedEditNotice, locked)
-  if (locked) setActiveTab('quickBlock', tabs)
+  setVisible(els.lockedEditNotice, locked)
 
-  blockedListTab.addEventListener('click', () => setActiveTab('blockedList', tabs))
-  quickBlockTab.addEventListener('click', () => setActiveTab('quickBlock', tabs))
+  if (locked) {
+    if (isLockedBySchedule && activeTimeBlock) {
+      els.lockedEditNotice.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
+        Locked by schedule: ${activeTimeBlock.name}
+      `
+    } else {
+      els.lockedEditNotice.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
+        Edits locked except adding
+      `
+    }
+    setupCountdownTimer(els.lockButton, lockUntil, timeBlocks, isLockedBySchedule)
+  }
 
+  // Setup Schedule UI
+  setupScheduleUI(
+    {
+      addBlockBtn: els.addBlockBtn,
+      blocksList: els.blocksList,
+      blockForm: els.blockForm,
+      formTitle: els.formTitle,
+      blockIdInput: els.blockIdInput,
+      blockNameInput: els.blockNameInput,
+      blockStartInput: els.blockStartInput,
+      blockEndInput: els.blockEndInput,
+      saveBlockBtn: els.saveBlockBtn,
+      cancelBlockBtn: els.cancelBlockBtn,
+      dayButtons: els.dayButtons,
+      enableBlockingCheckbox: els.enableBlockingCheckbox,
+    },
+    timeBlocks,
+    locked
+  )
+
+  // Quick Block Chip Buttons support
   document.querySelectorAll<HTMLButtonElement>('.quick-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
-      quickBlockInput.value = chip.dataset.prefix ?? ''
-      quickBlockInput.focus()
-      quickBlockInput.setSelectionRange(quickBlockInput.value.length, quickBlockInput.value.length)
+      els.quickBlockInput.value = chip.dataset.prefix ?? ''
+      els.quickBlockInput.focus()
+      els.quickBlockInput.setSelectionRange(
+        els.quickBlockInput.value.length,
+        els.quickBlockInput.value.length
+      )
     })
   })
 
   const addQuickBlock = async () => {
-    const additions = parseSubredditInput(quickBlockInput.value)
-    if (!additions.length) {
-      showStatus(quickBlockStatus, 'Enter a subreddit or supported URL.')
+    const currentList = parseSubredditInput(els.subredditsTextarea.value)
+    const result = handleQuickBlockInput(els.quickBlockInput.value, currentList)
+
+    if (result.isError) {
+      els.quickBlockStatus.classList.add('text-accent')
+      showStatus(els.quickBlockStatus, result.message, 3000)
+      setTimeout(() => {
+        els.quickBlockStatus.classList.remove('text-accent')
+      }, 3000)
       return
     }
 
-    const currentList = parseSubredditInput(subredditsTextarea.value)
-    const nextList = mergeSubredditLists(currentList, additions)
-    await browser.storage.local.set({
-      [STORAGE_KEYS.blockedSubreddits]: nextList,
-      [STORAGE_KEYS.extensionEnabled]: true,
-    })
-    enableBlockingCheckbox.checked = true
-    syncBlockedList(nextList)
-    quickBlockInput.value = ''
-    showStatus(quickBlockStatus, additions.length === 1 ? 'Blocked.' : 'Blocked all additions.')
+    if (result.success && result.nextList) {
+      await browser.storage.local.set({
+        [STORAGE_KEYS.blockedSubreddits]: result.nextList,
+        [STORAGE_KEYS.extensionEnabled]: true,
+      })
+      els.enableBlockingCheckbox.checked = true
+      syncBlockedList(result.nextList)
+      els.quickBlockInput.value = ''
+
+      showStatus(els.quickBlockStatus, result.message)
+      showStatus(els.statusDiv, result.message)
+    }
   }
-
-  saveButton.addEventListener('click', async () => {
-    const userList = parseSubredditInput(subredditsTextarea.value)
-    const uniqueSubreddits = mergeSubredditLists(userList)
-    await browser.storage.local.set({
-      [STORAGE_KEYS.blockedSubreddits]: uniqueSubreddits,
-      [STORAGE_KEYS.extensionEnabled]: enableBlockingCheckbox.checked,
-    })
-    syncBlockedList(uniqueSubreddits)
-    showStatus(statusDiv, 'Settings Saved!')
-  })
-
-  quickBlockAdd.addEventListener('click', addQuickBlock)
-  quickBlockInput.addEventListener('keydown', (event) => {
+  els.quickBlockAdd.addEventListener('click', addQuickBlock)
+  els.quickBlockInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault()
       void addQuickBlock()
     }
   })
 
-  themeToggle.addEventListener('click', async () => {
-    const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-    applyTheme(next as 'light' | 'dark', themeLabel, iconSun, iconMoon)
-    await browser.storage.local.set({ [STORAGE_KEYS.theme]: next })
+  // Blocked List Save
+  els.saveButton.addEventListener('click', async () => {
+    if (locked) return
+    const userList = parseSubredditInput(els.subredditsTextarea.value)
+    const uniqueSubreddits = mergeSubredditLists(userList)
+    await browser.storage.local.set({
+      [STORAGE_KEYS.blockedSubreddits]: uniqueSubreddits,
+      [STORAGE_KEYS.extensionEnabled]: els.enableBlockingCheckbox.checked,
+    })
+    syncBlockedList(uniqueSubreddits)
+    showStatus(els.statusDiv, 'Settings Saved!')
   })
 
-  lockButton.addEventListener('click', async () => {
-    enableBlockingCheckbox.checked = true
+  // Lock for today manual trigger
+  els.lockButton.addEventListener('click', async () => {
+    if (locked) return
+    els.enableBlockingCheckbox.checked = true
     await browser.storage.local.set(getLockTodayStorageUpdate())
-    applyLockState(
-      true,
-      [saveButton, toggleContainer, subredditsTextarea],
-      lockButton,
-      statusDiv,
-      subredditsTextarea
-    )
-    setVisible(lockedEditNotice, true)
-    setActiveTab('quickBlock', tabs)
-    showStatus(quickBlockStatus, 'Edits locked except adding.', 3000)
+    window.location.reload()
   })
 }
 
