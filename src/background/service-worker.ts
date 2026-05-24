@@ -12,6 +12,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.theme,
     STORAGE_KEYS.dailyLockUntil,
+    STORAGE_KEYS.dailyLockName,
     STORAGE_KEYS.timeBlocks,
   ])) as Partial<StorageData>
 
@@ -24,6 +25,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
   }
   if (typeof data.theme === 'undefined') next.theme = DEFAULTS.theme
   if (typeof data.dailyLockUntil === 'undefined') next.dailyLockUntil = DEFAULTS.dailyLockUntil
+  if (typeof data.dailyLockName === 'undefined') next.dailyLockName = DEFAULTS.dailyLockName
   if (typeof data.timeBlocks === 'undefined') next.timeBlocks = DEFAULTS.timeBlocks
   if (Object.keys(next).length > 0) await browser.storage.local.set(next)
 })
@@ -34,6 +36,7 @@ async function loadSettings(): Promise<StorageData> {
     STORAGE_KEYS.blockedSubreddits,
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.dailyLockUntil,
+    STORAGE_KEYS.dailyLockName,
     STORAGE_KEYS.timeBlocks,
   ])) as Record<string, unknown>
   return {
@@ -48,6 +51,10 @@ async function loadSettings(): Promise<StorageData> {
       typeof raw[STORAGE_KEYS.dailyLockUntil] === 'number'
         ? (raw[STORAGE_KEYS.dailyLockUntil] as number)
         : DEFAULTS.dailyLockUntil,
+    dailyLockName:
+      typeof raw[STORAGE_KEYS.dailyLockName] === 'string'
+        ? (raw[STORAGE_KEYS.dailyLockName] as string)
+        : DEFAULTS.dailyLockName,
     timeBlocks: Array.isArray(raw[STORAGE_KEYS.timeBlocks])
       ? (raw[STORAGE_KEYS.timeBlocks] as TimeBlock[])
       : DEFAULTS.timeBlocks,

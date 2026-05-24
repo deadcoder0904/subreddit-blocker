@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   extensionEnabled: 'extensionEnabled',
   theme: 'theme',
   dailyLockUntil: 'dailyLockUntil',
+  dailyLockName: 'dailyLockName',
   timeBlocks: 'timeBlocks',
 } as const
 
@@ -13,6 +14,7 @@ export const DEFAULTS = {
   extensionEnabled: true,
   theme: 'dark' as 'dark' | 'light',
   dailyLockUntil: 0 as number,
+  dailyLockName: '' as string,
   timeBlocks: [] as TimeBlock[],
 }
 

@@ -7,6 +7,7 @@ import {
   getActiveTimeBlock,
   getActiveTimeBlockRemainingMs,
   formatTime12Hour,
+  getBlockEndTime,
 } from '../../src/shared/lock'
 import type { TimeBlock } from '../../src/shared/types'
 
@@ -134,5 +135,63 @@ describe('time-block schedule helpers', () => {
     expect(formatTime12Hour('12:30')).toBe('12:30pm')
     expect(formatTime12Hour('00:15')).toBe('12:15am')
     expect(formatTime12Hour('00:00')).toBe('12am')
+  })
+
+  describe('getBlockEndTime', () => {
+    it('calculates end time for same-day block', () => {
+      const sameDayBlock: TimeBlock = {
+        id: '1',
+        name: 'Work',
+        startTime: '09:00',
+        endTime: '17:00',
+        days: [1, 2, 3, 4, 5],
+        enabled: true,
+      }
+      const now = new Date(2026, 4, 11, 10, 0, 0, 0) // Mon 10:00
+      const endTime = getBlockEndTime(sameDayBlock, now)
+      expect(endTime).toBe(new Date(2026, 4, 11, 17, 0, 0, 0).getTime())
+    })
+
+    it('calculates end time for overnight block starting today and ending tomorrow', () => {
+      const overnightBlock: TimeBlock = {
+        id: '2',
+        name: 'Night',
+        startTime: '22:00',
+        endTime: '02:00',
+        days: [1, 2],
+        enabled: true,
+      }
+      const now = new Date(2026, 4, 11, 23, 0, 0, 0) // Mon 23:00 (ends Tue 02:00)
+      const endTime = getBlockEndTime(overnightBlock, now)
+      expect(endTime).toBe(new Date(2026, 4, 12, 2, 0, 0, 0).getTime())
+    })
+
+    it('calculates end time for overnight block active after midnight today', () => {
+      const overnightBlock: TimeBlock = {
+        id: '2',
+        name: 'Night',
+        startTime: '22:00',
+        endTime: '02:00',
+        days: [1, 2],
+        enabled: true,
+      }
+      const now = new Date(2026, 4, 12, 1, 0, 0, 0) // Tue 01:00 (ends Tue 02:00)
+      const endTime = getBlockEndTime(overnightBlock, now)
+      expect(endTime).toBe(new Date(2026, 4, 12, 2, 0, 0, 0).getTime())
+    })
+
+    it('calculates end time for overnight block not yet started today (ends tomorrow)', () => {
+      const overnightBlock: TimeBlock = {
+        id: '2',
+        name: 'Night',
+        startTime: '22:00',
+        endTime: '02:00',
+        days: [1, 2],
+        enabled: true,
+      }
+      const now = new Date(2026, 4, 11, 11, 0, 0, 0) // Mon 11:00 (ends Tue 02:00)
+      const endTime = getBlockEndTime(overnightBlock, now)
+      expect(endTime).toBe(new Date(2026, 4, 12, 2, 0, 0, 0).getTime())
+    })
   })
 })

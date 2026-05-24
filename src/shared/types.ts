@@ -12,6 +12,7 @@ export interface StorageData {
   extensionEnabled: boolean
   theme?: 'light' | 'dark'
   dailyLockUntil?: number
+  dailyLockName?: string
   timeBlocks?: TimeBlock[]
 }
 

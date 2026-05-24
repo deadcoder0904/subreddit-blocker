@@ -50,7 +50,7 @@ export interface PopupElements {
   themeLabel: HTMLSpanElement
   iconSun: SVGElement
   iconMoon: SVGElement
-  lockButton: HTMLButtonElement
+  lockButtonsContainer: HTMLDivElement
   toggleContainer: HTMLLabelElement
 
   // Tabs and Panels
@@ -91,7 +91,7 @@ export function getPopupElements(): PopupElements {
     themeLabel: qs('#themeLabel') as HTMLSpanElement,
     iconSun: qs('#iconSun') as unknown as SVGElement,
     iconMoon: qs('#iconMoon') as unknown as SVGElement,
-    lockButton: qs('#lockToday') as HTMLButtonElement,
+    lockButtonsContainer: qs('#lockButtonsContainer') as HTMLDivElement,
     toggleContainer: qs('#toggleContainer') as HTMLLabelElement,
 
     // Tabs and Panels

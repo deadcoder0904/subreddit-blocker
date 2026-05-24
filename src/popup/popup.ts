@@ -3,8 +3,9 @@ import browser from 'webextension-polyfill'
 import { DEFAULTS, STORAGE_KEYS } from '../shared/constants'
 import {
   getEffectiveDailyLockUntil,
-  getLockTodayStorageUpdate,
   getActiveTimeBlock,
+  getBlockEndTime,
+  formatTime12Hour,
 } from '../shared/lock'
 import {
   parseSubredditInput,
@@ -54,6 +55,7 @@ async function init() {
     STORAGE_KEYS.extensionEnabled,
     STORAGE_KEYS.theme,
     STORAGE_KEYS.dailyLockUntil,
+    STORAGE_KEYS.dailyLockName,
     STORAGE_KEYS.timeBlocks,
   ])
 
@@ -103,8 +105,15 @@ async function init() {
   const storedLockUntil =
     (data[STORAGE_KEYS.dailyLockUntil] as number | undefined) ?? DEFAULTS.dailyLockUntil
   const lockUntil = getEffectiveDailyLockUntil(storedLockUntil)
+  const dailyLockName =
+    lockUntil === 0
+      ? ''
+      : ((data[STORAGE_KEYS.dailyLockName] as string | undefined) ?? DEFAULTS.dailyLockName)
   if (lockUntil !== storedLockUntil) {
-    await browser.storage.local.set({ [STORAGE_KEYS.dailyLockUntil]: lockUntil })
+    await browser.storage.local.set({
+      [STORAGE_KEYS.dailyLockUntil]: lockUntil,
+      [STORAGE_KEYS.dailyLockName]: dailyLockName,
+    })
   }
 
   const activeTimeBlock = getActiveTimeBlock(timeBlocks)
@@ -137,13 +146,44 @@ async function init() {
   els.scheduleTab.addEventListener('click', () => setActiveTab('schedule', tabSet))
 
   // Enforce lock UI state
+  const onLockClick = async (block: TimeBlock) => {
+    const endTime = getBlockEndTime(block)
+    const timeDiffMs = endTime - Date.now()
+    const totalMinutes = Math.ceil(timeDiffMs / (60 * 1000))
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    const durationParts = []
+    if (hours > 0) {
+      durationParts.push(`${hours} hour${hours > 1 ? 's' : ''}`)
+    }
+    if (minutes > 0) {
+      durationParts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`)
+    }
+    const durationStr = durationParts.join(' and ') || 'less than a minute'
+
+    const message = `Are you sure you want to block ${block.name} early? This will lock editing immediately for ${durationStr} (until ${formatTime12Hour(block.endTime)}).`
+    if (!confirm(message)) return
+
+    els.enableBlockingCheckbox.checked = true
+    await browser.storage.local.set({
+      [STORAGE_KEYS.dailyLockUntil]: endTime,
+      [STORAGE_KEYS.dailyLockName]: block.name,
+      [STORAGE_KEYS.extensionEnabled]: true,
+    })
+    window.location.reload()
+  }
+
   applyLockState(
     locked,
     [els.saveButton, els.toggleContainer, els.subredditsTextarea],
-    els.lockButton,
+    els.lockButtonsContainer,
     els.statusDiv,
     els.subredditsTextarea,
-    isLockedBySchedule
+    isLockedBySchedule,
+    timeBlocks,
+    dailyLockName,
+    onLockClick
   )
   setVisible(els.lockedEditNotice, locked)
 
@@ -154,12 +194,19 @@ async function init() {
         Locked by schedule: ${activeTimeBlock.name}
       `
     } else {
+      const lockNameDisplay = dailyLockName || 'today'
       els.lockedEditNotice.innerHTML = `
         <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
-        Edits locked except adding
+        Locked for ${lockNameDisplay}
       `
     }
-    setupCountdownTimer(els.lockButton, lockUntil, timeBlocks, isLockedBySchedule)
+    setupCountdownTimer(
+      els.lockButtonsContainer,
+      lockUntil,
+      timeBlocks,
+      isLockedBySchedule,
+      dailyLockName
+    )
   }
 
   // Setup Schedule UI
@@ -241,13 +288,26 @@ async function init() {
     showStatus(els.statusDiv, 'Settings Saved!')
   })
 
-  // Lock for today manual trigger
-  els.lockButton.addEventListener('click', async () => {
-    if (locked) return
-    els.enableBlockingCheckbox.checked = true
-    await browser.storage.local.set(getLockTodayStorageUpdate())
-    window.location.reload()
+  // Listen to storage changes to dynamically refresh footer buttons instantly
+  browser.storage.onChanged.addListener((changes) => {
+    if (changes[STORAGE_KEYS.timeBlocks]) {
+      const nextTimeBlocks =
+        (changes[STORAGE_KEYS.timeBlocks].newValue as TimeBlock[] | undefined) ?? []
+      applyLockState(
+        locked,
+        [els.saveButton, els.toggleContainer, els.subredditsTextarea],
+        els.lockButtonsContainer,
+        els.statusDiv,
+        els.subredditsTextarea,
+        isLockedBySchedule,
+        nextTimeBlocks,
+        dailyLockName,
+        onLockClick
+      )
+    }
   })
+
+  // Dynamic lock buttons are handled within applyLockState
 }
 
 document.addEventListener('DOMContentLoaded', init)

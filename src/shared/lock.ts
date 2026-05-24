@@ -90,3 +90,33 @@ export function formatTime12Hour(timeStr: string): string {
   const mPart = m === 0 ? '' : `:${String(m).padStart(2, '0')}`
   return `${h12}${mPart}${ampm}`
 }
+
+export function getBlockEndTime(block: TimeBlock, now = new Date()): number {
+  const [startH, startM] = block.startTime.split(':').map(Number)
+  const [endH, endM] = block.endTime.split(':').map(Number)
+
+  const startMinutes = startH * 60 + startM
+  const endMinutes = endH * 60 + endM
+  const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
+  const targetDate = new Date(now)
+  targetDate.setHours(endH, endM, 0, 0)
+
+  if (startMinutes <= endMinutes) {
+    // Same day range
+    return targetDate.getTime()
+  } else {
+    // Overnight range (e.g. 22:00 to 02:00)
+    if (currentMinutes >= startMinutes) {
+      // E.g. 23:00 on Monday. Ends Tuesday 02:00.
+      targetDate.setDate(targetDate.getDate() + 1)
+    } else if (currentMinutes < endMinutes) {
+      // E.g. 01:00 on Tuesday. Ends Tuesday 02:00.
+      // Already correct (today)
+    } else {
+      // E.g. 11:00. Not yet started, but manually started. Spans across midnight, so ends tomorrow.
+      targetDate.setDate(targetDate.getDate() + 1)
+    }
+    return targetDate.getTime()
+  }
+}

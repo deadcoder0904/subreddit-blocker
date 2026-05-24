@@ -207,3 +207,19 @@ input:disabled + .slider {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Custom orange focus ring styling replacing browser default blue */
+button:focus,
+input:focus,
+textarea:focus,
+[tabindex]:focus {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1.5px;
+}

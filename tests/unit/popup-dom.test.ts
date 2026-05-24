@@ -20,8 +20,15 @@ interface MockElement {
   textContent: string
   innerHTML: string
   readOnly: boolean
+  disabled: boolean
+  className: string
   blur(): void
   blurred: boolean
+  children: MockElement[]
+  appendChild(child: MockElement): void
+  querySelector(selector: string): MockElement | null
+  tagName?: string
+  addEventListener(type: string, cb: Function): void
 }
 
 // Mock document for global reference where needed
@@ -33,9 +40,13 @@ const globalBody = {
 }
 globalThis.document = {
   body: globalBody as unknown as HTMLElement,
+  createElement: (tag: string) => {
+    return createMockElement(tag.toUpperCase()) as unknown as HTMLElement
+  },
 } as unknown as Document
 
-function createMockElement(): MockElement {
+function createMockElement(tagName?: string): MockElement {
+  let classNameValue = ''
   const el: MockElement = {
     classList: {
       classes: new Set<string>(),
@@ -72,11 +83,44 @@ function createMockElement(): MockElement {
     textContent: '',
     innerHTML: '',
     readOnly: false,
+    disabled: false,
+    className: '',
     blur() {
       this.blurred = true
     },
     blurred: false,
+    children: [],
+    appendChild(child: MockElement) {
+      this.children.push(child)
+    },
+    querySelector(selector: string) {
+      if (selector === 'button') {
+        return this.children.find((c) => c.tagName === 'BUTTON') ?? null
+      }
+      return null
+    },
+    tagName,
+    addEventListener(_type: string, _cb: Function) {
+      // Mock event registration
+    },
   }
+
+  Object.defineProperty(el, 'className', {
+    get() {
+      return classNameValue
+    },
+    set(val: string) {
+      classNameValue = val
+      el.classList.classes.clear()
+      val
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((cls) => el.classList.classes.add(cls))
+    },
+    configurable: true,
+    enumerable: true,
+  })
+
   return el
 }
 
@@ -157,7 +201,7 @@ describe('Lock state helper unit tests with mocks', () => {
     const saveBtn = createMockElement()
     const toggleContainer = createMockElement()
     const textarea = createMockElement()
-    const lockBtn = createMockElement()
+    const container = createMockElement()
     const statusDiv = createMockElement()
 
     applyLockState(
@@ -167,10 +211,13 @@ describe('Lock state helper unit tests with mocks', () => {
         toggleContainer as unknown as HTMLElement,
         textarea as unknown as HTMLElement,
       ],
-      lockBtn as unknown as HTMLButtonElement,
+      container as unknown as HTMLDivElement,
       statusDiv as unknown as HTMLDivElement,
       textarea as unknown as HTMLTextAreaElement,
-      false
+      false,
+      [],
+      '',
+      () => {}
     )
 
     // controls assertions
@@ -182,8 +229,79 @@ describe('Lock state helper unit tests with mocks', () => {
     expect(saveBtn.classList.contains('opacity-60')).toBeTrue()
 
     // lock button assertions
+    const lockBtn = (container as unknown as MockElement).children[0]
+    expect(lockBtn).not.toBeUndefined()
     expect(lockBtn.style.pointerEvents).toBe('none')
     expect(lockBtn.mockAttributes['aria-disabled']).toBe('true')
     expect(lockBtn.innerHTML).toContain('Locked for today')
+  })
+
+  it('renders a disabled button with correct cursor style when unlocked and no schedules exist', () => {
+    const saveBtn = createMockElement()
+    const toggleContainer = createMockElement()
+    const textarea = createMockElement()
+    const container = createMockElement()
+    const statusDiv = createMockElement()
+
+    applyLockState(
+      false,
+      [
+        saveBtn as unknown as HTMLElement,
+        toggleContainer as unknown as HTMLElement,
+        textarea as unknown as HTMLElement,
+      ],
+      container as unknown as HTMLDivElement,
+      statusDiv as unknown as HTMLDivElement,
+      textarea as unknown as HTMLTextAreaElement,
+      false,
+      [],
+      '',
+      () => {}
+    )
+
+    const btn = (container as unknown as MockElement).children[0]
+    expect(btn).not.toBeUndefined()
+    expect(btn.disabled).toBeTrue()
+    expect(btn.style.pointerEvents).not.toBe('none')
+    expect(btn.classList.contains('cursor-not-allowed')).toBeTrue()
+  })
+
+  it('renders dynamic block buttons with time range in brackets when unlocked and schedules exist', () => {
+    const saveBtn = createMockElement()
+    const toggleContainer = createMockElement()
+    const textarea = createMockElement()
+    const container = createMockElement()
+    const statusDiv = createMockElement()
+    const timeBlocks = [
+      {
+        id: 'work-id',
+        name: 'Work',
+        startTime: '13:00',
+        endTime: '19:00',
+        days: [1, 2, 3, 4, 5],
+        enabled: true,
+      },
+    ]
+
+    applyLockState(
+      false,
+      [
+        saveBtn as unknown as HTMLElement,
+        toggleContainer as unknown as HTMLElement,
+        textarea as unknown as HTMLElement,
+      ],
+      container as unknown as HTMLDivElement,
+      statusDiv as unknown as HTMLDivElement,
+      textarea as unknown as HTMLTextAreaElement,
+      false,
+      timeBlocks,
+      '',
+      () => {}
+    )
+
+    const btn = (container as unknown as MockElement).children[0]
+    expect(btn).not.toBeUndefined()
+    expect(btn.innerHTML).toContain('Block Work (until 7pm)')
+    expect(btn.mockAttributes['title']).toBe('Locks editing immediately until 7pm')
   })
 })
