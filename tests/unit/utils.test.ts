@@ -8,6 +8,8 @@ import {
   getDaysText,
   formatSubredditDisplayName,
   handleQuickBlockInput,
+  formatSubredditClipboardText,
+  parseSubredditClipboardText,
 } from '../../src/shared/utils'
 
 describe('utils', () => {
@@ -16,6 +18,7 @@ describe('utils', () => {
     expect(isSupportedHostUrl('https://old.reddit.com/r/a')).toBeTrue()
     expect(isSupportedHostUrl('https://troddit.com/r/a')).toBeTrue()
     expect(isSupportedHostUrl('https://www.eddrit.com/r/a')).toBeTrue()
+    expect(isSupportedHostUrl('https://photon-reddit.com/r/a')).toBeTrue()
     expect(isSupportedHostUrl('https://google.com')).toBeFalse()
   })
 
@@ -23,18 +26,20 @@ describe('utils', () => {
     expect(extractSubreddit('https://www.reddit.com/r/AskReddit/')).toBe('/r/askreddit')
     expect(extractSubreddit('https://troddit.com/r/Entrepreneur/')).toBe('/r/entrepreneur')
     expect(extractSubreddit('https://www.eddrit.com/r/Programming/')).toBe('/r/programming')
+    expect(extractSubreddit('https://photon-reddit.com/r/WebDev/')).toBe('/r/webdev')
     expect(extractSubreddit('/r/funny')).toBe('/r/funny')
     expect(extractSubreddit('not a url')).toBeNull()
   })
 
   it('parses inputs', () => {
-    const input = `/r/tech\nr/AskReddit\n/ r/shouldntmatch\nfunny\nhttps://reddit.com/r/Entrepreneur/\nhttps://troddit.com/r/Privacy\nhttps://eddrit.com/r/WebDev` // includes a malformed line with space after '/'
+    const input = `/r/tech\nr/AskReddit\n/ r/shouldntmatch\nfunny\nhttps://reddit.com/r/Entrepreneur/\nhttps://troddit.com/r/Privacy\nhttps://eddrit.com/r/WebDev\nhttps://photon-reddit.com/r/Frontend` // includes a malformed line with space after '/'
     const out = parseSubredditInput(input)
     expect(out).toContain('/r/askreddit')
     expect(out).toContain('/r/funny')
     expect(out).toContain('/r/entrepreneur')
     expect(out).toContain('/r/privacy')
     expect(out).toContain('/r/webdev')
+    expect(out).toContain('/r/frontend')
   })
 
   it('formats lists for textarea correctly', () => {
@@ -93,6 +98,60 @@ describe('utils', () => {
       expect(res.success).toBeTrue()
       expect(res.message).toBe('Blocked /r/ufc')
       expect(res.nextList).toEqual(['/r/funny', '/r/pics', '/r/ufc'])
+    })
+  })
+
+  describe('subreddit clipboard helpers', () => {
+    it('formats subreddit lists as normalized clipboard text', () => {
+      expect(formatSubredditClipboardText(['/r/Foo', 'r/bar', 'baz'])).toBe(
+        '/r/foo\n/r/bar\n/r/baz'
+      )
+    })
+
+    it('parses supported subreddit clipboard formats', () => {
+      const text = [
+        '/r/Foo',
+        'r/bar',
+        'baz',
+        'https://reddit.com/r/TypeScript/',
+        'https://troddit.com/r/Privacy',
+        'https://eddrit.com/r/WebDev',
+        'https://photon-reddit.com/r/Frontend',
+      ].join('\n')
+
+      expect(parseSubredditClipboardText(text)).toEqual({
+        success: true,
+        subreddits: [
+          '/r/foo',
+          '/r/bar',
+          '/r/baz',
+          '/r/typescript',
+          '/r/privacy',
+          '/r/webdev',
+          '/r/frontend',
+        ],
+      })
+    })
+
+    it('dedupes parsed subreddit clipboard text', () => {
+      expect(parseSubredditClipboardText('/r/Foo\nfoo\nr/foo')).toEqual({
+        success: true,
+        subreddits: ['/r/foo'],
+      })
+    })
+
+    it('returns an error for empty clipboard text', () => {
+      expect(parseSubredditClipboardText('   \n')).toEqual({
+        success: false,
+        message: 'No valid subreddits found.',
+      })
+    })
+
+    it('returns an error for unknown URLs', () => {
+      expect(parseSubredditClipboardText('https://example.com/r/foo')).toEqual({
+        success: false,
+        message: 'No valid subreddits found.',
+      })
     })
   })
 })

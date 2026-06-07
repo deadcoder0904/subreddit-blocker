@@ -3,14 +3,16 @@
   "name": "Subreddit Blocker",
   "version": "1.0.0",
   "description": "Block specific subreddits with toggle functionality",
-  "permissions": ["storage", "webNavigation", "tabs"],
+  "permissions": ["storage", "webNavigation", "tabs", "clipboardRead", "clipboardWrite"],
   "host_permissions": [
     "*://*.reddit.com/*",
     "*://reddit.com/*",
     "*://*.troddit.com/*",
     "*://troddit.com/*",
     "*://*.eddrit.com/*",
-    "*://eddrit.com/*"
+    "*://eddrit.com/*",
+    "*://*.photon-reddit.com/*",
+    "*://photon-reddit.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",

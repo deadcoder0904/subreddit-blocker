@@ -16,6 +16,7 @@ describe('blocking decisions', () => {
     expect(shouldBlockUrl(settings(), 'https://reddit.com/r/funny')).toBeTrue()
     expect(shouldBlockUrl(settings(), 'https://troddit.com/r/funny')).toBeTrue()
     expect(shouldBlockUrl(settings(), 'https://eddrit.com/r/funny')).toBeTrue()
+    expect(shouldBlockUrl(settings(), 'https://photon-reddit.com/r/funny')).toBeTrue()
   })
 
   it('blocks when blocking is disabled but an active lock is present', () => {

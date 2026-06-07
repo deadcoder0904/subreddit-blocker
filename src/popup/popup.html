@@ -6,7 +6,7 @@
     <title>Subreddit Blocker</title>
     <link rel="stylesheet" href="styles/popup.css" />
   </head>
-  <body class="w-105 h-[620px] bg-bg text-text font-sans text-size leading-5" data-theme="dark">
+  <body class="w-105 h-155 bg-bg text-text font-sans text-size leading-5" data-theme="dark">
     <div class="flex flex-col h-full gap-3 p-3">
       <div class="flex items-center justify-between">
         <h1 class="text-sm font-semibold">Subreddit Blocker</h1>
@@ -43,7 +43,7 @@
       </div>
       <div class="text-xs text-muted bg-panel-2 border border-border rounded-md p-2.5">
         <strong>Supported formats:</strong><br />
-        reddit.com/r/subreddit<br />troddit.com/r/subreddit<br />eddrit.com/r/subreddit<br />/r/subreddit<br />r/subreddit
+        reddit.com/r/subreddit<br />troddit.com/r/subreddit<br />eddrit.com/r/subreddit<br />photon-reddit.com/r/subreddit<br />/r/subreddit<br />r/subreddit
       </div>
       <label
         id="toggleContainer"
@@ -87,16 +87,22 @@
         </div>
 
         <div id="blockedListPanel" class="flex flex-1 min-h-0 flex-col p-2">
-          <div
-            id="lockedEditNotice"
-            class="mb-2 flex items-center gap-1 rounded-md border border-border bg-panel-2 px-2 py-1.5 pt-2.5 text-[12px] text-muted"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent">
-              <path
-                d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
-              />
-            </svg>
-            Edits locked except adding
+          <div class="relative mb-2">
+            <div
+              id="lockedEditNotice"
+              class="flex min-w-0 items-center gap-1 rounded-md border border-border bg-panel-2 py-2 pl-2 pr-29 text-[12px] text-muted"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent">
+                <path
+                  d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"
+                />
+              </svg>
+              <span class="truncate whitespace-nowrap">Edits locked except adding</span>
+            </div>
+            <div class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+              <button type="button" id="copySubreddits" class="quick-chip">Copy</button>
+              <button type="button" id="pasteSubreddits" class="quick-chip">Paste</button>
+            </div>
           </div>
           <textarea
             id="subreddits"
@@ -106,6 +112,7 @@
 reddit.com/r/funny
 troddit.com/r/entrepreneur
 eddrit.com/r/programming
+photon-reddit.com/r/webdev
 "
           ></textarea>
         </div>
@@ -172,7 +179,7 @@ eddrit.com/r/programming
 
           <div
             id="blockForm"
-            class="hidden flex flex-col gap-2 p-2 bg-panel-2 border border-border rounded-md"
+            class="flex flex-col gap-2 p-2 bg-panel-2 border border-border rounded-md"
           >
             <div class="font-semibold text-xs text-muted uppercase tracking-wider" id="formTitle">
               New Time Block
@@ -256,7 +263,7 @@ eddrit.com/r/programming
         </div>
         <div
           id="lockButtonsContainer"
-          class="flex flex-col gap-1.5 max-h-[88px] overflow-y-auto popup-blocked-list shrink-0"
+          class="flex flex-col gap-1.5 max-h-22 overflow-y-auto popup-blocked-list shrink-0"
         >
           <!-- Dynamic lock button(s) rendered here -->
         </div>

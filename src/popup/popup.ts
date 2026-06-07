@@ -19,6 +19,7 @@ import { getPopupElements, showStatus, setVisible, scrollBlockedListToEnd } from
 import { setupThemeToggle } from './theme'
 import { applyLockState, setupCountdownTimer } from './lock-ui'
 import { setupScheduleUI } from './schedule-ui'
+import { copySubredditListToClipboard, pasteSubredditListFromClipboard } from './clipboard'
 
 function setActiveTab(
   active: 'blockedList' | 'quickBlock' | 'schedule',
@@ -189,15 +190,19 @@ async function init() {
 
   if (locked) {
     if (isLockedBySchedule && activeTimeBlock) {
+      const lockedNoticeText = `Locked by schedule: ${activeTimeBlock.name}`
+      els.lockedEditNotice.title = lockedNoticeText
       els.lockedEditNotice.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
-        Locked by schedule: ${activeTimeBlock.name}
+        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 shrink-0 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
+        <span class="truncate whitespace-nowrap">${lockedNoticeText}</span>
       `
     } else {
       const lockNameDisplay = dailyLockName || 'today'
+      const lockedNoticeText = `Locked for ${lockNameDisplay}`
+      els.lockedEditNotice.title = lockedNoticeText
       els.lockedEditNotice.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
-        Locked for ${lockNameDisplay}
+        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3.5 shrink-0 text-accent"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
+        <span class="truncate whitespace-nowrap">${lockedNoticeText}</span>
       `
     }
     setupCountdownTimer(
@@ -273,6 +278,29 @@ async function init() {
       event.preventDefault()
       void addQuickBlock()
     }
+  })
+
+  els.copySubredditsButton.addEventListener('click', async () => {
+    const result = await copySubredditListToClipboard({
+      textareaValue: els.subredditsTextarea.value,
+      clipboard: navigator.clipboard,
+    })
+    showStatus(els.statusDiv, result.message)
+  })
+
+  els.pasteSubredditsButton.addEventListener('click', async () => {
+    const result = await pasteSubredditListFromClipboard({
+      clipboard: navigator.clipboard,
+      save: async (nextStorage) => {
+        await browser.storage.local.set(nextStorage)
+      },
+    })
+
+    if (result.success) {
+      syncBlockedList(result.subreddits)
+    }
+
+    showStatus(els.statusDiv, result.message)
   })
 
   // Blocked List Save

@@ -18,7 +18,12 @@ export const DEFAULTS = {
   timeBlocks: [] as TimeBlock[],
 }
 
-export const SUPPORTED_HOSTS = ['reddit.com', 'troddit.com', 'eddrit.com'] as const
+export const SUPPORTED_HOSTS = [
+  'reddit.com',
+  'troddit.com',
+  'eddrit.com',
+  'photon-reddit.com',
+] as const
 
 export const SUPPORTED_HOST_PATTERNS = SUPPORTED_HOSTS.flatMap((host) => [
   `*://*.${host}/*`,

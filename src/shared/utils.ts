@@ -59,6 +59,43 @@ export function formatListForTextarea(list: string[]): string {
   return list.map((s) => (s.startsWith('/r/') ? s : s.startsWith('r/') ? `/${s}` : s)).join('\n')
 }
 
+export function formatSubredditClipboardText(list: string[]): string {
+  return formatListForTextarea(parseSubredditInput(list.join('\n')))
+}
+
+export type SubredditClipboardParseResult =
+  | { success: true; subreddits: string[] }
+  | { success: false; message: string }
+
+function parseSingleClipboardLine(line: string): string | null {
+  const value = line.trim()
+  if (!value) return null
+
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(value)) {
+    if (!isSupportedHostUrl(value)) return null
+    return extractSubreddit(value)
+  }
+
+  return parseSingleSubredditEntry(value)
+}
+
+export function parseSubredditClipboardText(input: string): SubredditClipboardParseResult {
+  const subreddits = [
+    ...new Set(
+      input
+        .split(/\r?\n/)
+        .map((line) => parseSingleClipboardLine(line))
+        .filter((value): value is string => !!value && value !== '/r/')
+    ),
+  ]
+
+  if (subreddits.length === 0) {
+    return { success: false, message: 'No valid subreddits found.' }
+  }
+
+  return { success: true, subreddits }
+}
+
 export function mergeSubredditLists(...lists: string[][]): string[] {
   return [...new Set(lists.flat())]
 }

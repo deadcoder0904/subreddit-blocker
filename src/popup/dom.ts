@@ -61,6 +61,8 @@ export interface PopupElements {
   quickBlockPanel: HTMLDivElement
   schedulePanel: HTMLDivElement
   lockedEditNotice: HTMLDivElement
+  copySubredditsButton: HTMLButtonElement
+  pasteSubredditsButton: HTMLButtonElement
 
   // Quick Block Elements
   quickBlockInput: HTMLInputElement
@@ -102,6 +104,8 @@ export function getPopupElements(): PopupElements {
     quickBlockPanel: qs('#quickBlockPanel') as HTMLDivElement,
     schedulePanel: qs('#schedulePanel') as HTMLDivElement,
     lockedEditNotice: qs('#lockedEditNotice') as HTMLDivElement,
+    copySubredditsButton: qs('#copySubreddits') as HTMLButtonElement,
+    pasteSubredditsButton: qs('#pasteSubreddits') as HTMLButtonElement,
 
     // Quick Block Elements
     quickBlockInput: qs('#quickBlockInput') as HTMLInputElement,
